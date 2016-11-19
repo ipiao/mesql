@@ -19,7 +19,7 @@ func (this *Stmt) Error() error {
 // 解析
 func (this *Stmt) Exec(params ...interface{}) *Result {
 	var res, err = this.stmt.Exec(params...)
-	return &Result{result: res, err: err}
+	return &Result{result: res, Err: err}
 }
 
 // 查询

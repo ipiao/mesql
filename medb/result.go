@@ -6,11 +6,7 @@ import (
 
 type Result struct {
 	result sql.Result
-	err    error
-}
-
-func (this *Result) Error() error {
-	return this.err
+	Err    error
 }
 
 func (this *Result) LastInsertIdInt() int {

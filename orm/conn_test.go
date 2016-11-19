@@ -40,10 +40,12 @@ func TestConn(t *testing.T) {
 	}()
 
 	var users []User
-	var b = conn3.Select("name", "id", "account").From("user").Where("1=?", 1)
+	var b = conn3.Select("name", "id", "account").From("user").Where("1=?", 1).In("id", 14, 15).Limit(10).Offset(0)
 	t.Log(b.ToSQL())
-	b.QueryTo(&users)
-	t.Log(users)
+	var count4, sql, err4 = b.CountCond()
+	t.Log(count4, sql, err4)
+	var n, err = b.QueryTo(&users)
+	t.Log(users, n, err)
 	//time.Sleep(1)
 	t.Log(count)
 	//}()

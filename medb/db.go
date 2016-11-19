@@ -74,10 +74,10 @@ func (this *DB) Close() error {
 func (this *DB) Exec(sql string, params ...interface{}) *Result {
 	if this.autocommit {
 		var res, err = this.db.Exec(sql, params...)
-		return &Result{result: res, err: err}
+		return &Result{result: res, Err: err}
 	} else {
 		var res, err = this.tx.Exec(sql, params...)
-		return &Result{result: res, err: err}
+		return &Result{result: res, Err: err}
 	}
 }
 

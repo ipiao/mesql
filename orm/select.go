@@ -1,6 +1,11 @@
 package meorm
 
-import "ipiao/mesql/medb"
+import (
+	"errors"
+	"fmt"
+	"ipiao/mesql/medb"
+	"reflect"
+)
 
 // 查询
 type selectBuilder struct {
@@ -12,9 +17,9 @@ type selectBuilder struct {
 	where       []*Where
 	orderbys    []string
 	groupbys    []string
-	limit       int
+	limit       int64
 	limitvalid  bool
-	offset      int
+	offset      int64
 	offsetvalid bool
 	having      []*Where
 	err         error
@@ -47,14 +52,14 @@ func (this *selectBuilder) OrderBy(order string) *selectBuilder {
 }
 
 // limit
-func (this *selectBuilder) Limit(limit int) *selectBuilder {
+func (this *selectBuilder) Limit(limit int64) *selectBuilder {
 	this.limitvalid = true
 	this.limit = limit
 	return this
 }
 
 // offset
-func (this *selectBuilder) Offset(offset int) *selectBuilder {
+func (this *selectBuilder) Offset(offset int64) *selectBuilder {
 	this.offsetvalid = true
 	this.offset = offset
 	return this
@@ -194,6 +199,12 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 
 //
 func (this *selectBuilder) Exec() *medb.Result {
+	if this.err != nil {
+		var res = &medb.Result{
+			Err: this.err,
+		}
+		return res
+	}
 	if len(this.sql) == 0 {
 		this.tosql()
 	}
@@ -202,6 +213,9 @@ func (this *selectBuilder) Exec() *medb.Result {
 
 //
 func (this *selectBuilder) QueryTo(models interface{}) (int, error) {
+	if this.err != nil {
+		return 0, this.err
+	}
 	if len(this.sql) == 0 {
 		this.tosql()
 	}
@@ -210,8 +224,144 @@ func (this *selectBuilder) QueryTo(models interface{}) (int, error) {
 
 //
 func (this *selectBuilder) QueryNext(dest ...interface{}) error {
+	if this.err != nil {
+		return this.err
+	}
 	if len(this.sql) == 0 {
 		this.tosql()
 	}
 	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
+}
+
+//-------------- 关于where条件的补充
+
+func (this *selectBuilder) In(col string, args ...interface{}) *selectBuilder {
+	return this.in(col, args)
+}
+
+//
+func (this *selectBuilder) in(col string, args interface{}) *selectBuilder {
+	var v = reflect.Indirect(reflect.ValueOf(args))
+	var k = v.Kind()
+	if k == reflect.Slice || k == reflect.Array {
+		if v.Len() == 0 {
+			return this
+		}
+		var buf = bufPool.Get()
+		defer bufPool.Put(buf)
+		var where = new(Where)
+		buf.WriteString(fmt.Sprintf("%s in(", col))
+		for i := 0; i < v.Len(); i++ {
+			if i > 0 {
+				buf.WriteString(" ,?")
+			} else {
+				buf.WriteRune('?')
+			}
+		}
+		buf.WriteRune(')')
+		where.condition = buf.String()
+		switch v.Index(0).Elem().Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().Int())
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().Uint())
+			}
+
+		case reflect.Float32, reflect.Float64:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().Float())
+			}
+		case reflect.Bool:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Bool())
+			}
+		case reflect.String:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().String())
+			}
+		default:
+			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
+		}
+
+		this.where = append(this.where, where)
+	} else {
+		this.err = errors.New("参数格式错误，必须为切片或数组")
+	}
+	return this
+}
+
+//
+func (this *selectBuilder) LimitPP(page, pagesize int64) *selectBuilder {
+	var offset = (page - 1) * pagesize
+	return this.Limit(pagesize).Offset(offset)
+}
+
+//
+func (this *selectBuilder) CountCond(countCond ...string) (int64, string, error) {
+	var countcond string
+	var count int64
+	if len(countCond) == 0 {
+		countcond = "count(0)"
+	} else {
+		countcond = countCond[0]
+	}
+	var sql, args = this.countsql(countcond)
+	var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
+	return count, sql, err
+}
+
+//
+func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
+	buf := bufPool.Get()
+	defer bufPool.Put(buf)
+
+	var args []interface{}
+	buf.WriteString("SELECT ")
+	buf.WriteString(countCond)
+	buf.WriteString(" FROM ")
+	buf.WriteString(this.from)
+
+	if len(this.where) > 0 {
+		buf.WriteString(" WHERE ")
+		for i, cond := range this.where {
+			if i > 0 {
+				buf.WriteString(" AND (")
+			} else {
+				buf.WriteRune('(')
+			}
+			buf.WriteString(cond.condition)
+			buf.WriteRune(')')
+			if len(cond.values) > 0 {
+				args = append(args, cond.values...)
+			}
+		}
+	}
+	if len(this.groupbys) > 0 {
+		buf.WriteString(" GROUP BY ")
+		for i, s := range this.groupbys {
+			if i > 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(s)
+		}
+	}
+	if len(this.having) > 0 {
+		buf.WriteString(" HAVING ")
+		for i, cond := range this.having {
+			if i > 0 {
+				buf.WriteString(" AND (")
+			} else {
+				buf.WriteRune('(')
+			}
+			buf.WriteString(cond.condition)
+			buf.WriteRune(')')
+			if len(cond.values) > 0 {
+				args = append(args, cond.values...)
+			}
+		}
+	}
+	return buf.String(), args
 }
