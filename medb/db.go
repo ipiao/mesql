@@ -20,6 +20,15 @@ func (this *DB) Init() {
 	this.db.SetConnMaxLifetime(DefaultConnMaxLifetime)
 }
 
+// 嵌入db
+func (this *DB) MountDB(db *sql.DB) error {
+	if this.db != nil {
+		return ErrMountDB
+	}
+	this.db = db
+	return nil
+}
+
 // 设置最大连接数
 func (this *DB) SetMaxOpenConns(n int) {
 	this.db.SetMaxOpenConns(n)
