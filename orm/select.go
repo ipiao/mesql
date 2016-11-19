@@ -1,9 +1,11 @@
 package meorm
 
+import "ipiao/mesql/medb"
+
 // 查询
 type selectBuilder struct {
 	Executor
-
+	connname    string
 	distinct    bool
 	columns     []string
 	from        string
@@ -77,7 +79,7 @@ func (this *selectBuilder) Having(condition string, values ...interface{}) *sele
 }
 
 // reset
-func (this *selectBuilder) reset() {
+func (this *selectBuilder) reset() *selectBuilder {
 	this.distinct = false
 	this.columns = this.columns[:0]
 	this.from = ""
@@ -92,6 +94,7 @@ func (this *selectBuilder) reset() {
 	this.err = nil
 	this.sql = ""
 	this.args = this.args[:0]
+	return this
 }
 
 // tosql
@@ -190,13 +193,25 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 }
 
 //
-func (this *selectBuilder) Exec() {
-	if len(this.sql) > 0 {
-
+func (this *selectBuilder) Exec() *medb.Result {
+	if len(this.sql) == 0 {
+		this.tosql()
 	}
+	return connections[this.connname].db.Exec(this.sql, this.args...)
 }
 
-// count
-func (this *selectBuilder) Count() {
+//
+func (this *selectBuilder) QueryTo(models interface{}) (int, error) {
+	if len(this.sql) == 0 {
+		this.tosql()
+	}
+	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
+}
 
+//
+func (this *selectBuilder) QueryNext(dest ...interface{}) error {
+	if len(this.sql) == 0 {
+		this.tosql()
+	}
+	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
 }

@@ -4,6 +4,7 @@ package medb
 import (
 	"database/sql"
 	"database/sql/driver"
+	"sync"
 )
 
 var (
@@ -11,6 +12,8 @@ var (
 	drivers = map[string]*driver.Driver{}
 	// 数据库连接
 	dbs = map[string]*DB{}
+	//
+	mu = new(sync.Mutex)
 )
 
 // 注册并命名驱动
@@ -32,6 +35,8 @@ func RegisterDriver(name string, driver driver.Driver) error {
 // driverName:驱动名
 // dataSourceName：数据库连接信息
 func RegisterDB(name, driverName, dataSourceName string) error {
+	mu.Lock()
+	defer mu.Unlock()
 	if dbs[name] != nil {
 		return ErrRegisterDB
 	}
@@ -39,7 +44,7 @@ func RegisterDB(name, driverName, dataSourceName string) error {
 	if err != nil {
 		return err
 	}
-	dbs[name] = &DB{db: db, autocommit: true}
+	dbs[name] = &DB{db: db, autocommit: true, name: name}
 	dbs[name].Init()
 	return nil
 }

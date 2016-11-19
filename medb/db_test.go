@@ -25,7 +25,7 @@ func TestDB(t *testing.T) {
 	var rows = db.Query(`select * from user`)
 	//var err2 = rows.Close()
 	//t.Log("[err2]:", err2)
-	var cols, _ = rows.Columns()
+	var cols = rows.Columns()
 	t.Log("[columns]:", cols)
 	var _, err3 = rows.ScanTo(&users)
 	t.Log("[err3]:", err3, "[users]:", users)
@@ -37,4 +37,6 @@ func TestDB(t *testing.T) {
 	stmt.Close()
 	var n5, err5 = stmt.Query().ScanTo(&users)
 	t.Log("[err5]:", err5, "[users]:", users, "[n5]:", n5)
+	var n6, err6 = db.Exec(`update user set name = "asfsaagfhydadf"`).RowsAffected()
+	t.Log("[n]:", n6, err6)
 }

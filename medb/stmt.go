@@ -17,8 +17,9 @@ func (this *Stmt) Error() error {
 }
 
 // 解析
-func (this *Stmt) Exec(params ...interface{}) (sql.Result, error) {
-	return this.stmt.Exec(params...)
+func (this *Stmt) Exec(params ...interface{}) *Result {
+	var res, err = this.stmt.Exec(params...)
+	return &Result{result: res, err: err}
 }
 
 // 查询

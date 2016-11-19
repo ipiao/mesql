@@ -8,6 +8,7 @@ import (
 
 // 自定义DB，包含db连接信息
 type DB struct {
+	name       string
 	db         *sql.DB
 	tx         *sql.Tx
 	autocommit bool
@@ -20,12 +21,22 @@ func (this *DB) Init() {
 	this.db.SetConnMaxLifetime(DefaultConnMaxLifetime)
 }
 
+func (this *DB) Name() string {
+	return this.name
+}
+
 // 嵌入db
 func (this *DB) MountDB(db *sql.DB) error {
+	mu.Lock()
+	defer mu.Unlock()
 	if this.db != nil {
 		return ErrMountDB
 	}
+	var defaultname = RandomName()
 	this.db = db
+	this.name = defaultname
+	this.autocommit = true
+	dbs[defaultname] = this
 	return nil
 }
 
@@ -60,11 +71,13 @@ func (this *DB) Close() error {
 }
 
 // 解析sql
-func (this *DB) Exec(sql string, params ...interface{}) (sql.Result, error) {
+func (this *DB) Exec(sql string, params ...interface{}) *Result {
 	if this.autocommit {
-		return this.db.Exec(sql, params...)
+		var res, err = this.db.Exec(sql, params...)
+		return &Result{result: res, err: err}
 	} else {
-		return this.tx.Exec(sql, params...)
+		var res, err = this.tx.Exec(sql, params...)
+		return &Result{result: res, err: err}
 	}
 }
 

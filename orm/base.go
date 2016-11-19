@@ -4,15 +4,23 @@ import "ipiao/mesql/medb"
 
 // 连接
 type Conn struct {
-	db       *medb.DB
-	selector *selectBuilder
+	name string
+	db   *medb.DB
+}
+
+// 返回连接名
+func (this *Conn) Name() string {
+	return this.name
+}
+
+// 返回连接名
+func (this *Conn) DB() *medb.DB {
+	return this.db
 }
 
 func (this *Conn) Select(cols ...string) *selectBuilder {
-	if this.selector == nil {
-		this.selector = new(selectBuilder)
-	}
-	this.selector.reset()
-	this.selector.columns = append(this.selector.columns, cols...)
-	return this.selector
+	var selector = new(selectBuilder).reset()
+	selector.connname = this.name
+	selector.columns = append(selector.columns, cols...)
+	return selector
 }
