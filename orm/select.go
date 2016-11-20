@@ -10,18 +10,19 @@ import (
 // 查询
 type selectBuilder struct {
 	Executor
-	connname    string
-	distinct    bool
-	columns     []string
-	from        string
-	where       []*Where
+	connname string
+	distinct bool
+	columns  []string
+	from     string
+	//where       []*whereConstraint
+	where       *Where
 	orderbys    []string
 	groupbys    []string
 	limit       int64
 	limitvalid  bool
 	offset      int64
 	offsetvalid bool
-	having      []*Where
+	having      []*whereConstraint
 	err         error
 	sql         string
 	args        []interface{}
@@ -67,7 +68,7 @@ func (this *selectBuilder) Offset(offset int64) *selectBuilder {
 
 // where
 func (this *selectBuilder) Where(condition string, values ...interface{}) *selectBuilder {
-	this.where = append(this.where, &Where{
+	this.where.where = append(this.where.where, &whereConstraint{
 		condition: condition,
 		values:    values,
 	})
@@ -76,7 +77,7 @@ func (this *selectBuilder) Where(condition string, values ...interface{}) *selec
 
 // having
 func (this *selectBuilder) Having(condition string, values ...interface{}) *selectBuilder {
-	this.having = append(this.having, &Where{
+	this.having = append(this.having, &whereConstraint{
 		condition: condition,
 		values:    values,
 	})
@@ -88,14 +89,14 @@ func (this *selectBuilder) reset() *selectBuilder {
 	this.distinct = false
 	this.columns = this.columns[:0]
 	this.from = ""
-	this.where = make([]*Where, 0, 0)
+	this.where = new(Where)
 	this.orderbys = this.orderbys[:0]
 	this.groupbys = this.groupbys[:0]
 	this.limit = 0
 	this.limitvalid = false
 	this.offset = 0
 	this.offsetvalid = false
-	this.having = make([]*Where, 0, 0)
+	this.having = make([]*whereConstraint, 0, 0)
 	this.err = nil
 	this.sql = ""
 	this.args = this.args[:0]
@@ -112,6 +113,10 @@ func (this *selectBuilder) ToSQL() (string, []interface{}) {
 
 // 把查询条件组成sql并放到查询体中
 func (this *selectBuilder) tosql() (string, []interface{}) {
+	if this.where.err != nil {
+		this.err = this.where.err
+		return "", nil
+	}
 	if len(this.columns) == 0 {
 		panic("没有指定列")
 	}
@@ -136,9 +141,9 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 	buf.WriteString(" FROM ")
 	buf.WriteString(this.from)
 
-	if len(this.where) > 0 {
+	if len(this.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where {
+		for i, cond := range this.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -199,36 +204,36 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 
 // 查询不建议使用
 func (this *selectBuilder) Exec() *medb.Result {
+	if len(this.sql) == 0 {
+		this.tosql()
+	}
 	if this.err != nil {
 		var res = &medb.Result{
 			Err: this.err,
 		}
 		return res
 	}
-	if len(this.sql) == 0 {
-		this.tosql()
-	}
 	return connections[this.connname].db.Exec(this.sql, this.args...)
 }
 
 // 解析到结构体，数组。。。
 func (this *selectBuilder) QueryTo(models interface{}) (int, error) {
-	if this.err != nil {
-		return 0, this.err
-	}
 	if len(this.sql) == 0 {
 		this.tosql()
+	}
+	if this.err != nil {
+		return 0, this.err
 	}
 	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
 }
 
 // 把查询组成sql并解析
 func (this *selectBuilder) QueryNext(dest ...interface{}) error {
-	if this.err != nil {
-		return this.err
-	}
 	if len(this.sql) == 0 {
 		this.tosql()
+	}
+	if this.err != nil {
+		return this.err
 	}
 	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
 }
@@ -264,9 +269,9 @@ func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 	buf.WriteString(" FROM ")
 	buf.WriteString(this.from)
 
-	if len(this.where) > 0 {
+	if len(this.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where {
+		for i, cond := range this.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -309,62 +314,63 @@ func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 //-------------- 关于Where条件的补充
 // In
 func (this *selectBuilder) WhereIn(col string, args ...interface{}) *selectBuilder {
-	return this.wherein(col, args)
-}
-
-// 查询条件in的解析
-func (this *selectBuilder) wherein(col string, args interface{}) *selectBuilder {
-	var v = reflect.Indirect(reflect.ValueOf(args))
-	var k = v.Kind()
-	if k == reflect.Slice || k == reflect.Array {
-		if v.Len() == 0 {
-			return this
-		}
-		var buf = bufPool.Get()
-		defer bufPool.Put(buf)
-		var where = new(Where)
-		buf.WriteString(fmt.Sprintf("%s IN(", col))
-		for i := 0; i < v.Len(); i++ {
-			if i > 0 {
-				buf.WriteString(" ,?")
-			} else {
-				buf.WriteRune('?')
-			}
-		}
-		buf.WriteRune(')')
-		where.condition = buf.String()
-		switch v.Index(0).Elem().Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().Int())
-			}
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().Uint())
-			}
-
-		case reflect.Float32, reflect.Float64:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().Float())
-			}
-		case reflect.Bool:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Bool())
-			}
-		case reflect.String:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().String())
-			}
-		default:
-			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
-		}
-
-		this.where = append(this.where, where)
-	} else {
-		this.err = errors.New("参数格式错误，必须为切片或数组")
-	}
+	this.where.wherein(col, args)
 	return this
 }
+
+//// 查询条件in的解析
+//func (this *selectBuilder) wherein(col string, args interface{}) *selectBuilder {
+//	var v = reflect.Indirect(reflect.ValueOf(args))
+//	var k = v.Kind()
+//	if k == reflect.Slice || k == reflect.Array {
+//		if v.Len() == 0 {
+//			return this
+//		}
+//		var buf = bufPool.Get()
+//		defer bufPool.Put(buf)
+//		var where = new(whereConstraint)
+//		buf.WriteString(fmt.Sprintf("%s IN(", col))
+//		for i := 0; i < v.Len(); i++ {
+//			if i > 0 {
+//				buf.WriteString(" ,?")
+//			} else {
+//				buf.WriteRune('?')
+//			}
+//		}
+//		buf.WriteRune(')')
+//		where.condition = buf.String()
+//		switch v.Index(0).Elem().Kind() {
+//		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+//			for i := 0; i < v.Len(); i++ {
+//				where.values = append(where.values, v.Index(i).Elem().Int())
+//			}
+//		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+//			for i := 0; i < v.Len(); i++ {
+//				where.values = append(where.values, v.Index(i).Elem().Uint())
+//			}
+
+//		case reflect.Float32, reflect.Float64:
+//			for i := 0; i < v.Len(); i++ {
+//				where.values = append(where.values, v.Index(i).Elem().Float())
+//			}
+//		case reflect.Bool:
+//			for i := 0; i < v.Len(); i++ {
+//				where.values = append(where.values, v.Index(i).Bool())
+//			}
+//		case reflect.String:
+//			for i := 0; i < v.Len(); i++ {
+//				where.values = append(where.values, v.Index(i).Elem().String())
+//			}
+//		default:
+//			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
+//		}
+
+//		this.where.where = append(this.where.where, where)
+//	} else {
+//		this.err = errors.New("参数格式错误，必须为切片或数组")
+//	}
+//	return this
+//}
 
 // In
 func (this *selectBuilder) havingIn(col string, args ...interface{}) *selectBuilder {
@@ -381,7 +387,7 @@ func (this *selectBuilder) havingin(col string, args interface{}) *selectBuilder
 		}
 		var buf = bufPool.Get()
 		defer bufPool.Put(buf)
-		var where = new(Where)
+		var where = new(whereConstraint)
 		buf.WriteString(fmt.Sprintf("%s in(", col))
 		for i := 0; i < v.Len(); i++ {
 			if i > 0 {
@@ -427,33 +433,18 @@ func (this *selectBuilder) havingin(col string, args interface{}) *selectBuilder
 
 // 全匹配
 func (this *selectBuilder) WhereLike(col string, arg interface{}) *selectBuilder {
-	return this.whereLike(col, arg, 0)
+	this.where.whereLike(col, arg, 0)
+	return this
 }
 
 // 左匹配
 func (this *selectBuilder) WhereLikeL(col string, arg interface{}) *selectBuilder {
-	return this.whereLike(col, arg, -1)
+	this.where.whereLike(col, arg, -1)
+	return this
 }
 
 // 右匹配
 func (this *selectBuilder) WhereLikeR(col string, arg interface{}) *selectBuilder {
-	return this.whereLike(col, arg, 1)
-}
-
-// like -1表示左边匹配，0全匹配，1.右边匹配
-func (this *selectBuilder) whereLike(col string, arg interface{}, likekind int8) *selectBuilder {
-	var where = &Where{
-		condition: fmt.Sprintf("%s LIKE ?", col),
-	}
-	var value interface{}
-	if likekind == 0 {
-		value = fmt.Sprint("%", fmt.Sprintf("%v", arg), "%")
-	} else if likekind == -1 {
-		value = fmt.Sprint("%", fmt.Sprintf("%v", arg))
-	} else if likekind == 1 {
-		value = fmt.Sprint(fmt.Sprintf("%v", arg), "%")
-	}
-	where.values = append(where.values, value)
-	this.where = append(this.where, where)
+	this.where.whereLike(col, arg, 1)
 	return this
 }

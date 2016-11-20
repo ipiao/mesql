@@ -40,7 +40,7 @@ func TestConn(t *testing.T) {
 	}()
 
 	var users []User
-	var b = conn3.Select("name").From("user").WhereLikeR("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
+	var b = conn3.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
 	t.Log(b.ToSQL())
 	var count4, sql, err4 = b.CountCond()
 	t.Log(count4, sql, err4)
@@ -49,5 +49,36 @@ func TestConn(t *testing.T) {
 	//time.Sleep(1)
 	t.Log(count)
 	//}()
+}
+
+func BenchmarkConn(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var count int
+
+		var basedb, _ = sql.Open("mysql", "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai")
+
+		var conn3 = MountConnection(basedb)
+		connections[conn3.name] = conn3
+		b.Log(basedb)
+
+		b.Log(conn3.Name())
+		go func() {
+			//runtime.Gosched()
+			var bb = conn3.Select("count(0)").From("user").Where("1=?", 1)
+			bb.QueryNext(&count)
+			b.Log(bb.ToSQL())
+		}()
+
+		var users []User
+		var bbb = conn3.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
+		b.Log(bbb.ToSQL())
+		var count4, sql, err4 = bbb.CountCond()
+		b.Log(count4, sql, err4)
+		var n, err = bbb.QueryTo(&users)
+		b.Log(users, n, err)
+		//time.Sleep(1)
+		b.Log(count)
+		//}()
+	}
 
 }
