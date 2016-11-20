@@ -40,7 +40,7 @@ func TestConn(t *testing.T) {
 	}()
 
 	var users []User
-	var b = conn3.Select("name", "id", "account").From("user").Where("1=?", 1).In("id", 14, 15).Limit(10).Offset(0)
+	var b = conn3.Select("name").From("user").WhereLikeR("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
 	t.Log(b.ToSQL())
 	var count4, sql, err4 = b.CountCond()
 	t.Log(count4, sql, err4)
