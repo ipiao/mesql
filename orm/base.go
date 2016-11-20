@@ -18,9 +18,18 @@ func (this *Conn) DB() *medb.DB {
 	return this.db
 }
 
+// 生成查询构造器
 func (this *Conn) Select(cols ...string) *selectBuilder {
-	var selector = new(selectBuilder).reset()
-	selector.connname = this.name
-	selector.columns = append(selector.columns, cols...)
-	return selector
+	var builder = new(selectBuilder).reset()
+	builder.connname = this.name
+	builder.columns = append(builder.columns, cols...)
+	return builder
+}
+
+func (this *Conn) SQL(sql string, args ...interface{}) *commonBuilder {
+	return &commonBuilder{
+		sql:      sql,
+		args:     args,
+		connname: this.name,
+	}
 }
