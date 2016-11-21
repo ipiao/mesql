@@ -3,6 +3,7 @@ package medb
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"time"
 )
 
@@ -119,11 +120,12 @@ func (this *DB) Prepare(sql string) *Stmt {
 // 开启事务
 func (this *DB) Begin() bool {
 	var err error
-	if !this.autocommit {
+	if this.autocommit {
 		this.tx, err = this.db.Begin()
-	}
-	if err != nil {
-		return false
+		if err != nil {
+			return false
+		}
+		this.autocommit = false
 	}
 	return true
 }
@@ -134,9 +136,8 @@ func (this *DB) Commit() error {
 		return ErrCommit
 	}
 	var err = this.tx.Commit()
-	if err == nil {
-		this.autocommit = true
-	}
+	this.tx = nil
+	this.autocommit = true
 	return err
 }
 
@@ -146,14 +147,16 @@ func (this *DB) RollBack() error {
 		return ErrRollBack
 	}
 	var err = this.tx.Rollback()
-	if err == nil {
-		this.autocommit = true
-	}
+	this.tx = nil
+	this.autocommit = true
 	return err
 }
 
 // 使已经存在的状态生成事务的状态
 func (this *DB) Stmt(stmt *Stmt) *Stmt {
+	if this.autocommit {
+		return &Stmt{err: errors.New("事务没有开启")}
+	}
 	var s = this.tx.Stmt(stmt.stmt)
 	return &Stmt{stmt: s}
 }
