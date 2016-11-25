@@ -48,6 +48,9 @@ func TestConn(t *testing.T) {
 	t.Log(users, n, err)
 	//time.Sleep(1)
 	t.Log(count)
+
+	n, err = conn3.SQL("select name,account,id,phone from user where 1=1").QueryTo(&users)
+	t.Log(users, n, err)
 	//}()
 }
 
@@ -78,6 +81,7 @@ func BenchmarkConn(b *testing.B) {
 		b.Log(users, n, err)
 		//time.Sleep(1)
 		b.Log(count)
+
 		//}()
 	}
 
