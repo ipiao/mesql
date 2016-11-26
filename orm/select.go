@@ -67,10 +67,10 @@ func (this *selectBuilder) Offset(offset int64) *selectBuilder {
 }
 
 // where
-func (this *selectBuilder) Where(condition string, values ...interface{}) *selectBuilder {
+func (this *selectBuilder) Where(condition string, args ...interface{}) *selectBuilder {
 	this.where.where = append(this.where.where, &whereConstraint{
 		condition: condition,
-		values:    values,
+		values:    args,
 	})
 	return this
 }
@@ -113,6 +113,8 @@ func (this *selectBuilder) ToSQL() (string, []interface{}) {
 
 // 把查询条件组成sql并放到查询体中
 func (this *selectBuilder) tosql() (string, []interface{}) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if this.where.err != nil {
 		this.err = this.where.err
 		return "", nil

@@ -34,7 +34,7 @@ func (this *Rows) Scan(dest ...interface{}) error {
 
 // 组合scan和next
 func (this *Rows) ScanNext(dest ...interface{}) error {
-	defer this.rows.Close()
+	//defer this.rows.Close()
 	if this.err != nil {
 		return this.err
 	}

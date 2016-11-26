@@ -18,6 +18,15 @@ func (this *Conn) DB() *medb.DB {
 	return this.db
 }
 
+// 直接写sql
+func (this *Conn) SQL(sql string, args ...interface{}) *commonBuilder {
+	return &commonBuilder{
+		sql:      sql,
+		args:     args,
+		connname: this.name,
+	}
+}
+
 // 生成查询构造器
 func (this *Conn) Select(cols ...string) *selectBuilder {
 	var builder = new(selectBuilder).reset()
@@ -26,10 +35,26 @@ func (this *Conn) Select(cols ...string) *selectBuilder {
 	return builder
 }
 
-func (this *Conn) SQL(sql string, args ...interface{}) *commonBuilder {
-	return &commonBuilder{
-		sql:      sql,
-		args:     args,
-		connname: this.name,
-	}
+// 生成更新构造器
+func (this *Conn) Update(table string) *updateBuilder {
+	var builder = new(updateBuilder).reset()
+	builder.connname = this.name
+	builder.table = table
+	return builder
+}
+
+// 生成插入构造器
+func (this *Conn) InsertInto(table string) *insertBuilder {
+	var builder = new(insertBuilder).reset()
+	builder.connname = this.name
+	builder.table = table
+	return builder
+}
+
+// 生成删除构造器
+func (this *Conn) DeleteFrom(table string) *deleteBuilder {
+	var builder = new(deleteBuilder).reset()
+	builder.connname = this.name
+	builder.table = table
+	return builder
 }

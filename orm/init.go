@@ -13,6 +13,7 @@ var (
 	mutex       = new(sync.Mutex)
 )
 
+// 直接移植已有数据连接
 func MountConnection(basedb *sql.DB) *Conn {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -30,6 +31,7 @@ func MountConnection(basedb *sql.DB) *Conn {
 	return connections[name]
 }
 
+// 新建连接
 func NewConnection(driverName, dataSource string, connname ...string) *Conn {
 	mutex.Lock()
 	defer mutex.Unlock()
