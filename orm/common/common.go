@@ -5,7 +5,7 @@ import "math/rand"
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 var lenLetters = len(letters)
 
-// RandomString returns a random string of length n.
+// 随机字符串
 func RandomString(n int) string {
 	b := make([]rune, n)
 	for i := range b {

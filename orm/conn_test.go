@@ -79,12 +79,11 @@ func BenchmarkConn(b *testing.B) {
 		b.Log(time.Now())
 
 		b.Log(conn3.Name())
-		go func() {
-			//runtime.Gosched()
-			var bb = conn3.Select("count(0)").From("user").Where("1=?", 1)
-			bb.QueryNext(&count)
-			b.Log(bb.ToSQL())
-		}()
+		//		go func() {
+		//			//runtime.Gosched()
+		//			conn3.Select("count(0)").From("user").Where("1=?", 1).QueryNext(&count)
+		//			//b.Log(bb.ToSQL())
+		//		}()
 
 		var users []User
 		var sel = conn3.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
