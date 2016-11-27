@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"log"
 	"time"
 )
 
@@ -73,6 +74,7 @@ func (this *DB) Close() error {
 
 // 解析sql
 func (this *DB) Exec(sql string, params ...interface{}) *Result {
+	log.Println("[sql]:", sql, "[vals]:", params)
 	if this.autocommit {
 		var res, err = this.db.Exec(sql, params...)
 		return &Result{result: res, Err: err}

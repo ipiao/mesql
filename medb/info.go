@@ -1,8 +1,6 @@
 package medb
 
-import (
-	"time"
-)
+import "time"
 
 var (
 	// 默认最大连接 50
@@ -14,5 +12,5 @@ var (
 	// 默认解析的tag
 	// DefaultTagName = "db"
 	// 数据库映射名
-	DbColumn = "db"
+	MeTag = "db"
 )
