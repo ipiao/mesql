@@ -127,7 +127,7 @@ func (this *Rows) parse(value reflect.Value, index int, fields []interface{}) er
 					} else {
 						//非匿名字段
 						if fieldValue.CanSet() {
-							var fieldName = fieldType.Tag.Get(DefaultTagName)
+							var fieldName = fieldType.Tag.Get(DbColumn)
 							if fieldName == "_" {
 								continue
 							}

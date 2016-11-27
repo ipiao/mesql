@@ -12,5 +12,7 @@ var (
 	// 默认最大连接失效 30分钟
 	DefaultConnMaxLifetime = 30 * time.Minute
 	// 默认解析的tag
-	DefaultTagName = "db"
+	// DefaultTagName = "db"
+	// 数据库映射名
+	DbColumn = "db"
 )
