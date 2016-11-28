@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"sync"
 
-	"github.com/ipiao/mesql/orm/common"
-
 	"github.com/ipiao/mesql/medb"
+	"github.com/ipiao/mesql/orm/common"
 )
 
 var (
@@ -51,5 +50,6 @@ func NewConnection(driverName, dataSource string, connname ...string) *Conn {
 		db:   medb.OpenDB(name),
 		name: name,
 	}
+	connections[name] = conn
 	return conn
 }

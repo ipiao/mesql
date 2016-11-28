@@ -2,6 +2,7 @@ package meorm
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -19,52 +20,14 @@ type User struct {
 }
 
 func TestConn(t *testing.T) {
-	//	var conn1 = NewConnection("mysql", "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai")
-	//	t.Log(conn1.db.GetDB())
+	var datasource = "tom:123456@tcp(192.168.1.187:3306)/hxz?charset=utf8mb4&loc=Asia%2fShanghai"
+	var Conn = NewConnection("mysql", datasource)
+	fmt.Println("conn", Conn, "db", Conn.DB())
+	var uid int64
+	err := Conn.Select("id").From("consignor_user").Where("user_name=? and pwd=?", "admin", "123456").QueryNext(&uid)
+	//_, err := Conn.db.Query("select id from consignor_user where user_name=? and pwd=?", "admin", "123456").ScanTo(&uid)
+	t.Log(uid, err)
 
-	//	var conn2 = NewConnection("mysql", "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai")
-	//	t.Log(conn2.db.GetDB())
-	var count int
-
-	var basedb, _ = sql.Open("mysql", "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai")
-
-	var conn3 = MountConnection(basedb)
-	conn3.db.Init()
-	t.Log(basedb)
-
-	t.Log(conn3.Name())
-	go func() {
-		//runtime.Gosched()
-		var bb = conn3.Select("count(0)").From("user").Where("1=?", 1)
-		bb.QueryNext(&count)
-		t.Log(bb.ToSQL())
-	}()
-
-	var users []User
-	var b = conn3.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
-	t.Log(b.ToSQL())
-	var count4, sql, err4 = b.CountCond()
-	t.Log(count4, sql, err4)
-	var n, err = b.QueryTo(&users)
-	t.Log(users, n, err)
-	//time.Sleep(1)
-	t.Log(count)
-
-	r := conn3.Update("user").Set("name", "hahahabb").Where("1=?", 1).OrderBy("id desc").Limit(1)
-	t.Log(r.ToSQL())
-	r.Exec()
-
-	ins := conn3.InsertInto("user").Columns("name", "account").Values("name1", "ac1", "das").Values("name2", "ac2")
-	t.Log(ins.ToSQL())
-	res := ins.Exec()
-	t.Log(res.Err)
-
-	n, err = conn3.SQL("select name,account,id,phone from user where 1=1").QueryTo(&users)
-	t.Log(users, n, err)
-
-	//}()
-
-	//Delete 不测试，不建议物理删除
 }
 
 func BenchmarkConn(b *testing.B) {
