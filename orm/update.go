@@ -2,7 +2,8 @@ package meorm
 
 import (
 	"errors"
-	"ipiao/mesql/medb"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 // 更新构造器

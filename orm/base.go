@@ -1,6 +1,6 @@
 package meorm
 
-import "ipiao/mesql/medb"
+import "github.com/ipiao/mesql/medb"
 
 // 连接
 type Conn struct {

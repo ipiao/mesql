@@ -2,10 +2,11 @@ package meorm
 
 import (
 	"fmt"
-	"ipiao/mesql/medb"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 var reg = regexp.MustCompile(`\B[A-Z]`)

@@ -1,6 +1,6 @@
 package meorm
 
-import "ipiao/mesql/medb"
+import "github.com/ipiao/mesql/medb"
 
 // 解析器
 type Executor interface {

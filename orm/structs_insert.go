@@ -3,9 +3,10 @@ package meorm
 import (
 	"errors"
 	"fmt"
-	"ipiao/mesql/medb"
 	"reflect"
 	"strings"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 // 插入结构体或结构体数组

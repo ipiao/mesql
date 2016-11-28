@@ -1,5 +1,5 @@
 package meorm
 
-import "ipiao/mesql/melog"
+import "github.com/ipiao/mesql/melog"
 
 var meLog = melog.NewMeLog(1)

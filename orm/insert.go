@@ -3,7 +3,8 @@ package meorm
 import (
 	"errors"
 	"fmt"
-	"ipiao/mesql/medb"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 // insert构造器

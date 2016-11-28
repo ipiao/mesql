@@ -1,6 +1,6 @@
 package meorm
 
-import "ipiao/mesql/medb"
+import "github.com/ipiao/mesql/medb"
 
 // 最基本的sql构造，直接写sql
 type commonBuilder struct {

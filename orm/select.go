@@ -3,8 +3,9 @@ package meorm
 import (
 	"errors"
 	"fmt"
-	"ipiao/mesql/medb"
 	"reflect"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 // 查询

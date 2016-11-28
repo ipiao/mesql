@@ -2,9 +2,11 @@ package meorm
 
 import (
 	"database/sql"
-	"ipiao/mesql/medb"
-	"ipiao/mesql/orm/common"
 	"sync"
+
+	"github.com/ipiao/mesql/orm/common"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 var (
