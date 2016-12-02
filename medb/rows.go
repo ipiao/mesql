@@ -35,7 +35,7 @@ func (this *Rows) Scan(dest ...interface{}) error {
 // 组合scan和next
 func (this *Rows) ScanNext(dest ...interface{}) error {
 	// 在并发测试中不通过
-	//defer this.rows.Close()
+	defer this.Close()
 	if this.err != nil {
 		return this.err
 	}
