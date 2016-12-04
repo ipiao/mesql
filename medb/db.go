@@ -84,6 +84,21 @@ func (this *DB) Exec(sql string, params ...interface{}) *Result {
 	}
 }
 
+// Call 调用存储过程
+func (this *DB) Call(procedure string, params ...interface{}) *Rows {
+	var sql = "call " + procedure + "("
+	for i := 0; i < len(params); i++ {
+		if i > 0 {
+			sql += " ,?"
+		} else {
+			sql += "?"
+		}
+	}
+	sql += ")"
+	var rows, err = this.db.Query(sql, params...)
+	return &Rows{rows, err, nil}
+}
+
 // 查询
 func (this *DB) Query(sql string, params ...interface{}) *Rows {
 	if this.autocommit {
