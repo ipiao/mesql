@@ -10,13 +10,6 @@ type Info struct {
 	Role int
 }
 
-type User struct {
-	Id     int
-	Name   string
-	Status int
-	Info
-}
-
 func (this User) TableName() string {
 	this.Name = "user"
 	return this.Name
