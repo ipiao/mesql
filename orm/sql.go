@@ -10,6 +10,13 @@ type commonBuilder struct {
 	args     []interface{}
 }
 
+// 继续拼接
+func (this *commonBuilder) AppendSQL(sql string, args ...interface{}) *commonBuilder {
+	this.sql += " " + sql
+	this.args = append(this.args, args...)
+	return this
+}
+
 // 查询不建议使用
 func (this *commonBuilder) Exec() *medb.Result {
 	return connections[this.connname].db.Exec(this.sql, this.args...)
