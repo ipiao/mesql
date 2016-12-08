@@ -17,6 +17,7 @@ type User struct {
 	Mobile    string `db:"phone"`
 	Create_by int    `db:"create_by"`
 	Update_by int    `db:"update_by"`
+	Status    int
 }
 
 func TestConn(t *testing.T) {
@@ -37,7 +38,7 @@ func BenchmarkConn(b *testing.B) {
 		var basedb, _ = sql.Open("mysql", "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai")
 
 		var conn3 = MountConnection(basedb)
-		conn3.db.SetMaxOpenConns(300)
+		conn3.db.SetMaxOpenConns(3000)
 		b.Log(basedb)
 		b.Log(time.Now())
 

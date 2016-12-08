@@ -34,9 +34,28 @@ func TestDB(t *testing.T) {
 	t.Log("[stmt]:", stmt)
 	var n, err4 = stmt.Query().ScanTo(&users)
 	t.Log("[err4]:", err4, "[users]:", users, "[n]:", n)
-	stmt.Close()
+
+	tx, err := db.db.Begin()
+	db.autocommit = false
+	db.tx = tx
+	t.Log(err)
+	//	go func() {
+	//		tx, err := db.db.Begin()
+	//		db.autocommit = false
+	//		db.tx = tx
+	//		t.Log(err)
+	//		db.Exec(`update user set name = "yyyy"`).RowsAffected()
+	//		t.Log(db.tx)
+	//		t.Log(db.RollBack())
+	//	}()
+
+	var n6, err6 = db.Exec(`update user set name = "mmasafsmmmm"`).RowsAffected()
+	t.Log(db.tx)
+	t.Log(db.Commit())
+
+	t.Log(db.tx)
+	t.Log("[n]:", n6, err6)
 	var n5, err5 = stmt.Query().ScanTo(&users)
 	t.Log("[err5]:", err5, "[users]:", users, "[n5]:", n5)
-	var n6, err6 = db.Exec(`update user set name = "asfsaagfhydadf"`).RowsAffected()
-	t.Log("[n]:", n6, err6)
+	stmt.Close()
 }

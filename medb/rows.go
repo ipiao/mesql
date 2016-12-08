@@ -35,22 +35,21 @@ func (this *Rows) Scan(dest ...interface{}) error {
 // 组合scan和next
 func (this *Rows) ScanNext(dest ...interface{}) error {
 	// 在并发测试中不通过
-	defer this.Close()
 	if this.err != nil {
 		return this.err
 	}
 	for this.rows.Next() {
-		return this.rows.Scan(dest...)
+		this.rows.Scan(dest...)
 	}
-	return nil
+	return this.rows.Close()
 }
 
 // 关闭
 func (this *Rows) Close() error {
-	if this.rows.Next() {
-		return this.rows.Close()
-	}
-	return nil
+	//if this.rows.Next() {
+	return this.rows.Close()
+	//}
+	//return nil
 }
 
 // parse
