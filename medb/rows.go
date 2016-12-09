@@ -114,6 +114,18 @@ func (this *Rows) parse(value reflect.Value, index int, fields []interface{}) er
 					if err == nil {
 						value.Set(reflect.ValueOf(t))
 					}
+				} else {
+					var i = sql.NullInt64{}
+					var err = i.Scan(*(fields[index].(*interface{})))
+					if err != nil {
+						return err
+					}
+					if i.Valid {
+						t := time.Unix(i.Int64, 0)
+						if err == nil {
+							value.Set(reflect.ValueOf(t))
+						}
+					}
 				}
 			} else {
 				//常规结构体解析
