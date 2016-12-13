@@ -74,7 +74,7 @@ func (this *DB) Close() error {
 
 // 解析sql
 func (this *DB) Exec(sql string, params ...interface{}) *Result {
-	log.Println("[sql]:", sql, "[vals]:", params)
+	log.Println("[mesql]:", sql, "[vals]:", params)
 	if this.autocommit {
 		var res, err = this.db.Exec(sql, params...)
 		return &Result{result: res, Err: err}
@@ -101,6 +101,7 @@ func (this *DB) Call(procedure string, params ...interface{}) *Rows {
 
 // 查询
 func (this *DB) Query(sql string, params ...interface{}) *Rows {
+	log.Println("[mesql]:", sql, "[vals]:", params)
 	if this.autocommit {
 		var rows, err = this.db.Query(sql, params...)
 		return &Rows{rows: rows, err: err}

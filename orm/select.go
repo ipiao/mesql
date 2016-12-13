@@ -53,6 +53,12 @@ func (this *selectBuilder) OrderBy(order string) *selectBuilder {
 	return this
 }
 
+// group by
+func (this *selectBuilder) GroupBy(group string) *selectBuilder {
+	this.groupbys = append(this.groupbys, group)
+	return this
+}
+
 // limit
 func (this *selectBuilder) Limit(limit int64) *selectBuilder {
 	this.limitvalid = true
@@ -261,6 +267,20 @@ func (this *selectBuilder) CountCond(countCond ...string) (int64, string, error)
 	return count, sql, err
 }
 
+// 查询符合条件的总数目
+func (this *selectBuilder) CountResult(alies string, countCond ...string) (int64, string, error) {
+	var countcond string
+	var count int64
+	if len(countCond) == 0 {
+		countcond = "count(0)"
+	} else {
+		countcond = countCond[0]
+	}
+	var sql, args = this.countresult(alies, countcond)
+	var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
+	return count, sql, err
+}
+
 // 生成查询总条数的sql
 func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 	buf := bufPool.Get()
@@ -311,6 +331,76 @@ func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 			}
 		}
 	}
+	return buf.String(), args
+}
+
+// 把查询条件组成sql并放到查询体中
+func (this *selectBuilder) countresult(alies, countCond string) (string, []interface{}) {
+	buf := bufPool.Get()
+	defer bufPool.Put(buf)
+	var args []interface{}
+	if this.where.err != nil {
+		this.err = this.where.err
+		return "", nil
+	}
+	buf.WriteString("SELECT ")
+	buf.WriteString(countCond)
+	buf.WriteString(" FROM( ")
+	buf.WriteString("SELECT ")
+
+	if this.distinct {
+		buf.WriteString("DISTINCT ")
+	}
+	for i, s := range this.columns {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(s)
+	}
+	buf.WriteString(" FROM ")
+	buf.WriteString(this.from)
+
+	if len(this.where.where) > 0 {
+		buf.WriteString(" WHERE ")
+		for i, cond := range this.where.where {
+			if i > 0 {
+				buf.WriteString(" AND (")
+			} else {
+				buf.WriteRune('(')
+			}
+			buf.WriteString(cond.condition)
+			buf.WriteRune(')')
+			if len(cond.values) > 0 {
+				args = append(args, cond.values...)
+			}
+		}
+	}
+	if len(this.groupbys) > 0 {
+		buf.WriteString(" GROUP BY ")
+		for i, s := range this.groupbys {
+			if i > 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(s)
+		}
+	}
+	if len(this.having) > 0 {
+		buf.WriteString(" HAVING ")
+		for i, cond := range this.having {
+			if i > 0 {
+				buf.WriteString(" AND (")
+			} else {
+				buf.WriteRune('(')
+			}
+			buf.WriteString(cond.condition)
+			buf.WriteRune(')')
+			if len(cond.values) > 0 {
+				args = append(args, cond.values...)
+			}
+		}
+	}
+	buf.WriteRune(')')
+	buf.WriteString(alies)
 	return buf.String(), args
 }
 
