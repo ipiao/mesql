@@ -97,6 +97,12 @@ func (this *Where) wherein(col string, args interface{}) *Where {
 			for i := 0; i < v.Len(); i++ {
 				where.values = append(where.values, v.Index(i).Elem().String())
 			}
+			//		case reflect.Slice:
+			//			if v.Len() > 1 {
+			//				this.err = errors.New(fmt.Sprintf("WhereIn 参数错误"))
+			//				return this
+			//			}
+			//			return this.wherein(col, v.Index(0).Interface())
 		default:
 			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
 		}

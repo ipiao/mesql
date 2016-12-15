@@ -262,6 +262,11 @@ func (this *selectBuilder) CountCond(countCond ...string) (int64, string, error)
 	} else {
 		countcond = countCond[0]
 	}
+	//	if len(this.having) > 0 {
+	//		var sql, args = this.countresult("alie", countcond)
+	//		var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
+	//		return count, sql, err
+	//	}
 	var sql, args = this.countsql(countcond)
 	var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
 	return count, sql, err
@@ -407,6 +412,10 @@ func (this *selectBuilder) countresult(alies, countCond string) (string, []inter
 //-------------- 关于Where条件的补充
 // In
 func (this *selectBuilder) WhereIn(col string, args ...interface{}) *selectBuilder {
+	if len(args) < 1 {
+		this.err = errors.New("WhereIn 条件缺失")
+		return this
+	}
 	this.where.wherein(col, args)
 	return this
 }
