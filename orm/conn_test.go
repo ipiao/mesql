@@ -21,13 +21,18 @@ type User struct {
 }
 
 func TestConn(t *testing.T) {
-	var datasource = "tom:123456@tcp(192.168.1.187:3306)/hxz?charset=utf8mb4&loc=Asia%2fShanghai"
+	var datasource = "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai"
 	var Conn = NewConnection("mysql", datasource)
 	fmt.Println("conn", Conn, "db", Conn.DB())
-	var uid int64
-	err := Conn.Select("id").From("consignor_user").Where("user_name=? and pwd=?", "admin", "123456").QueryNext(&uid)
-	//_, err := Conn.db.Query("select id from consignor_user where user_name=? and pwd=?", "admin", "123456").ScanTo(&uid)
-	t.Log(uid, err)
+	var users []User
+	var sel = Conn.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", []int{14, 15}).Limit(10).Offset(0)
+	t.Log(sel.ToSQL())
+	var count4, sql, err4 = sel.CountCond()
+	t.Log(count4, sql, err4)
+	var n, err = sel.QueryTo(&users)
+	t.Log(users, n, err)
+	//time.Sleep(1)
+	t.Log(count4)
 
 }
 
@@ -50,7 +55,7 @@ func BenchmarkConn(b *testing.B) {
 		//		}()
 
 		var users []User
-		var sel = conn3.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", 14, 15).Limit(10).Offset(0)
+		var sel = conn3.Select("name").From("user").WhereLikeL("name", "名字").WhereIn("id", []int{14, 15}).Limit(10).Offset(0)
 		b.Log(sel.ToSQL())
 		var count4, sql, err4 = sel.CountCond()
 		b.Log(count4, sql, err4)

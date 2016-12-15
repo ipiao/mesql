@@ -51,11 +51,11 @@ func (this *Where) whereLike(col string, arg interface{}, likekind int8) *Where 
 
 // In
 func (this *Where) WhereIn(col string, args ...interface{}) *Where {
-	return this.wherein(col, args)
+	return this.wherein(col, args...)
 }
 
 // 查询条件in的解析
-func (this *Where) wherein(col string, args interface{}) *Where {
+func (this *Where) wherein(col string, args ...interface{}) *Where {
 	var v = reflect.Indirect(reflect.ValueOf(args))
 	var k = v.Kind()
 	if k == reflect.Slice || k == reflect.Array {
@@ -97,12 +97,17 @@ func (this *Where) wherein(col string, args interface{}) *Where {
 			for i := 0; i < v.Len(); i++ {
 				where.values = append(where.values, v.Index(i).Elem().String())
 			}
-			//		case reflect.Slice:
-			//			if v.Len() > 1 {
-			//				this.err = errors.New(fmt.Sprintf("WhereIn 参数错误"))
-			//				return this
-			//			}
-			//			return this.wherein(col, v.Index(0).Interface())
+		case reflect.Slice, reflect.Array:
+			if v.Len() > 1 {
+				this.err = errors.New(fmt.Sprintf("WhereIn 参数错误"))
+				return this
+			}
+			v = v.Index(0).Elem()
+			var params []interface{}
+			for i := 0; i < v.Len(); i++ {
+				params = append(params, v.Index(i).Interface())
+			}
+			return this.wherein(col, params...)
 		default:
 			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
 		}

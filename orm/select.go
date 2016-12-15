@@ -412,11 +412,7 @@ func (this *selectBuilder) countresult(alies, countCond string) (string, []inter
 //-------------- 关于Where条件的补充
 // In
 func (this *selectBuilder) WhereIn(col string, args ...interface{}) *selectBuilder {
-	if len(args) < 1 {
-		this.err = errors.New("WhereIn 条件缺失")
-		return this
-	}
-	this.where.wherein(col, args)
+	this.where.wherein(col, args...)
 	return this
 }
 
