@@ -59,6 +59,12 @@ func (this *updateBuilder) Where(condition string, args ...interface{}) *updateB
 	return this
 }
 
+// WhereIn 条件
+func (this *updateBuilder) WhereIn(col string, args ...interface{}) *updateBuilder {
+	this.where.wherein(col, args...)
+	return this
+}
+
 // orderby 条件
 func (this *updateBuilder) OrderBy(order string) *updateBuilder {
 	this.orderbys = append(this.orderbys, order)
