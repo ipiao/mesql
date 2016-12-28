@@ -416,6 +416,12 @@ func (this *selectBuilder) WhereIn(col string, args ...interface{}) *selectBuild
 	return this
 }
 
+// In
+func (this *selectBuilder) WhereNotIn(col string, args ...interface{}) *selectBuilder {
+	this.where.wherenotin(col, args...)
+	return this
+}
+
 //// 查询条件in的解析
 //func (this *selectBuilder) wherein(col string, args interface{}) *selectBuilder {
 //	var v = reflect.Indirect(reflect.ValueOf(args))

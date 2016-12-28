@@ -118,3 +118,68 @@ func (this *Where) wherein(col string, args ...interface{}) *Where {
 	}
 	return this
 }
+
+// 查询条件in的解析
+func (this *Where) wherenotin(col string, args ...interface{}) *Where {
+	var v = reflect.Indirect(reflect.ValueOf(args))
+	var k = v.Kind()
+	if k == reflect.Slice || k == reflect.Array {
+		if v.Len() == 0 {
+			return this
+		}
+		var buf = bufPool.Get()
+		defer bufPool.Put(buf)
+		var where = new(whereConstraint)
+		buf.WriteString(fmt.Sprintf("%s NOT IN(", col))
+		for i := 0; i < v.Len(); i++ {
+			if i > 0 {
+				buf.WriteString(" ,?")
+			} else {
+				buf.WriteRune('?')
+			}
+		}
+		buf.WriteRune(')')
+		where.condition = buf.String()
+		switch v.Index(0).Elem().Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().Int())
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().Uint())
+			}
+
+		case reflect.Float32, reflect.Float64:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().Float())
+			}
+		case reflect.Bool:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Bool())
+			}
+		case reflect.String:
+			for i := 0; i < v.Len(); i++ {
+				where.values = append(where.values, v.Index(i).Elem().String())
+			}
+		case reflect.Slice, reflect.Array:
+			if v.Len() > 1 {
+				this.err = errors.New(fmt.Sprintf("WhereIn 参数错误"))
+				return this
+			}
+			v = v.Index(0).Elem()
+			var params []interface{}
+			for i := 0; i < v.Len(); i++ {
+				params = append(params, v.Index(i).Interface())
+			}
+			return this.wherein(col, params...)
+		default:
+			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
+		}
+
+		this.where = append(this.where, where)
+	} else {
+		this.err = errors.New("参数格式错误，必须为切片或数组")
+	}
+	return this
+}
