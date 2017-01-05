@@ -2,7 +2,6 @@ package meorm
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ipiao/mesql/medb"
 )
@@ -42,10 +41,10 @@ func (this *insertBuilder) Values(values ...interface{}) *insertBuilder {
 	// 支持多条插入
 	//	mutex.Lock()
 	//	defer mutex.Unlock()
-	if len(this.columns) != len(values) && len(this.columns) > 0 {
-		this.err = errors.New(fmt.Sprintf("values %v 的长度 %d 不匹配 columns 的长度 %d",
-			values, len(values), len(this.columns)))
-	}
+	//	if len(this.columns) != len(values) && len(this.columns) > 0 {
+	//		this.err = errors.New(fmt.Sprintf("values %v 的长度 %d 不匹配 columns 的长度 %d",
+	//			values, len(values), len(this.columns)))
+	//	}
 	this.values = append(this.values, values)
 	return this
 }
