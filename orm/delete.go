@@ -41,6 +41,11 @@ func (this *deleteBuilder) Where(condition string, args ...interface{}) *deleteB
 	return this
 }
 
+func (this *deleteBuilder) WhereIn(col string, args ...interface{}) *deleteBuilder {
+	this.where.wherein(col, args...)
+	return this
+}
+
 // orderby 条件
 func (this *deleteBuilder) OrderBy(order string) *deleteBuilder {
 	this.orderbys = append(this.orderbys, order)
