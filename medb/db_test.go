@@ -2,60 +2,35 @@ package medb
 
 import (
 	"testing"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type User struct {
-	Id        int    `db:"id"`
-	Name      string `db:"name"`
-	Account   string `db:"account"`
-	Password  string `db:"password"`
-	Mobile    string `db:"phone"`
-	Create_by int    `db:"create_by"`
-	Update_by int    `db:"update_by"`
+	Id   int    `db:"id"`
+	Name string `db:"name"`
+	Tt
+	Consignor Consignor
+}
+
+type Tt struct {
+	CreateTime string
+	UpdateTime time.Time
+}
+
+type Consignor struct {
+	ConsignorCode string
 }
 
 func TestDB(t *testing.T) {
 	var users = []User{}
 	var dbName = "test"
-	var err1 = RegisterDB(dbName, "mysql", "root:1001@tcp(127.0.0.1:3306)/depot?charset=utf8mb4&loc=Asia%2fShanghai")
+	var err1 = RegisterDB(dbName, "mysql", "ipiao:1001@tcp(192.168.1.201:3306)/hxz-web?charset=utf8mb4&loc=Asia%2fShanghai")
 	t.Log("[err1]:", err1)
 	var db = OpenDB(dbName)
-	var rows = db.Query(`select * from user`)
-	//var err2 = rows.Close()
-	//t.Log("[err2]:", err2)
-	var cols = rows.Columns()
-	t.Log("[columns]:", cols)
+	var rows = db.Query(`select * from consignor_user`)
 	var _, err3 = rows.ScanTo(&users)
-	t.Log("[err3]:", err3, "[users]:", users)
-
-	var stmt = db.Prepare(`select id,name,account,password,phone from user`)
-	t.Log("[stmt]:", stmt)
-	var n, err4 = stmt.Query().ScanTo(&users)
-	t.Log("[err4]:", err4, "[users]:", users, "[n]:", n)
-
-	tx, err := db.db.Begin()
-	db.autocommit = false
-	db.tx = tx
-	t.Log(err)
-	//	go func() {
-	//		tx, err := db.db.Begin()
-	//		db.autocommit = false
-	//		db.tx = tx
-	//		t.Log(err)
-	//		db.Exec(`update user set name = "yyyy"`).RowsAffected()
-	//		t.Log(db.tx)
-	//		t.Log(db.RollBack())
-	//	}()
-
-	var n6, err6 = db.Exec(`update user set name = "mmasafsmmmm"`).RowsAffected()
-	t.Log(db.tx)
-	t.Log(db.Commit())
-
-	t.Log(db.tx)
-	t.Log("[n]:", n6, err6)
-	var n5, err5 = stmt.Query().ScanTo(&users)
-	t.Log("[err5]:", err5, "[users]:", users, "[n5]:", n5)
-	stmt.Close()
+	t.Log("[err3]:", err3)
+	t.Log(users)
 }

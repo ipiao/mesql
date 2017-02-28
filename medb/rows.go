@@ -111,6 +111,9 @@ func (this *Rows) parse(value reflect.Value, index int, fields []interface{}) er
 				}
 				if s.Valid {
 					t, err := time.ParseInLocation("2006-01-02 15:04:05", s.String, time.Local)
+					if err != nil {
+						t, err = time.ParseInLocation("2006-01-02", s.String, time.Local)
+					}
 					if err == nil {
 						value.Set(reflect.ValueOf(t))
 					}
@@ -182,7 +185,7 @@ func (this *Rows) scan(v reflect.Value) error {
 	return err
 }
 
-// ScanTo
+// ScanTo 解析
 func (this *Rows) ScanTo(data interface{}) (int, error) {
 	if this.err == nil {
 		var d, err = newData(data)
