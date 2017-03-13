@@ -31,3 +31,8 @@ func (this *commonBuilder) QueryTo(models interface{}) (int, error) {
 func (this *commonBuilder) QueryNext(dest ...interface{}) error {
 	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
 }
+
+// 把查询组成sql并解析
+func (this *commonBuilder) ToSQL() (string, []interface{}) {
+	return this.sql, this.args
+}
