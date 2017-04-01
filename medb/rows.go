@@ -18,8 +18,8 @@ type Row struct {
 	row *sql.Row
 }
 
-// 返回错误信息
-func (r *Rows) Error() error {
+// Err 返回错误信息
+func (r *Rows) Err() error {
 	return r.err
 }
 
@@ -190,7 +190,7 @@ func (r *Rows) ScanTo(data interface{}) (int, error) {
 	return 0, r.err
 }
 
-// data解析目标的描述
+// data 解析目标的描述
 type data struct {
 	t        reflect.Type
 	v        reflect.Value
@@ -199,7 +199,7 @@ type data struct {
 	length   int
 }
 
-// 生成一个data的描述
+// newData 生成一个data的描述
 func newData(value interface{}) (*data, error) {
 	var d = new(data)
 	d.t = reflect.TypeOf(value)
