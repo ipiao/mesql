@@ -4,37 +4,37 @@ import (
 	"database/sql"
 )
 
-// 准备状态
+// Stmt 准备状态
 // 使用时注意手动关闭
 type Stmt struct {
-	stmt *sql.Stmt
-	err  error
+	*sql.Stmt
+	err error
 }
 
-// 返回错误信息
-func (this *Stmt) Error() error {
-	return this.err
+// Error 返回错误信息
+func (s *Stmt) Error() error {
+	return s.err
 }
 
-// 解析
-func (this *Stmt) Exec(params ...interface{}) *Result {
-	var res, err = this.stmt.Exec(params...)
-	return &Result{result: res, Err: err}
+// Exec 解析
+func (s *Stmt) Exec(params ...interface{}) *Result {
+	var res, err = s.Stmt.Exec(params...)
+	return &Result{Result: res, Err: err}
 }
 
-// 查询
-func (this *Stmt) Query(params ...interface{}) *Rows {
-	var rows, err = this.stmt.Query(params...)
-	return &Rows{rows: rows, err: err}
+// Query 查询
+func (s *Stmt) Query(params ...interface{}) *Rows {
+	var rows, err = s.Stmt.Query(params...)
+	return &Rows{Rows: rows, err: err}
 }
 
-// 查询单行
-func (this *Stmt) QueryRow(params ...interface{}) *Row {
-	var row = this.stmt.QueryRow(params...)
-	return &Row{row: row}
+// QueryRow 查询单行
+func (s *Stmt) QueryRow(params ...interface{}) *Row {
+	var row = s.Stmt.QueryRow(params...)
+	return &Row{Row: row}
 }
 
-// 关闭
-func (this *Stmt) Close() error {
-	return this.stmt.Close()
+// Close 关闭
+func (s *Stmt) Close() error {
+	return s.Stmt.Close()
 }

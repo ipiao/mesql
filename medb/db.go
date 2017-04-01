@@ -2,188 +2,113 @@ package medb
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"errors"
-	"time"
+	"sync"
 )
 
-// 自定义DB，包含db连接信息
+// DB 自定义DB
 type DB struct {
-	name       string
-	db         *sql.DB
-	tx         *sql.Tx
-	autocommit bool
+	*sql.DB
+	*sql.Tx
+	autoCommit bool
 }
 
-// 初始化db
-func (this *DB) Init() {
-	this.db.SetMaxOpenConns(DefaultMaxOpenConns)
-	this.db.SetMaxIdleConns(DefaultMaxIdleConns)
-	this.db.SetConnMaxLifetime(DefaultConnMaxLifetime)
-}
-
-func (this *DB) Name() string {
-	return this.name
-}
-
-// 嵌入db
-func (this *DB) MountDB(db *sql.DB) error {
+// MountDB 嵌入db
+func (d *DB) MountDB(db *sql.DB) error {
+	var mu = new(sync.Mutex)
 	mu.Lock()
 	defer mu.Unlock()
-	if this.db != nil {
-		return ErrMountDB
+	if d.DB != nil {
+		return errors.New("db already has connection")
 	}
-	var defaultname = RandomName()
-	this.db = db
-	this.name = defaultname
-	this.autocommit = true
-	dbs[defaultname] = this
+	d.DB = db
+	d.autoCommit = true
 	return nil
 }
 
-// 设置最大连接数
-func (this *DB) SetMaxOpenConns(n int) {
-	this.db.SetMaxOpenConns(n)
-}
-
-// 设置最大空闲连接数
-func (this *DB) SetMaxIdleConns(n int) {
-	this.db.SetMaxIdleConns(n)
-}
-
-// 设置连接时间
-func (this *DB) SetConnMaxLifetime(d time.Duration) {
-	this.db.SetConnMaxLifetime(d)
-}
-
-// DB的驱动
-func (this *DB) Driver() driver.Driver {
-	return this.db.Driver()
-}
-
-// Ping检查连接是否有效
-func (this *DB) Ping() error {
-	return this.db.Ping()
-}
-
-// Close,关闭连接
-func (this *DB) Close() error {
-	return this.db.Close()
-}
-
-// 解析sql
-func (this *DB) Exec(sql string, params ...interface{}) *Result {
-	// log.Println("[MESQL]:", sql, "[ARGS]:", params)
-	if this.autocommit {
-		var res, err = this.db.Exec(sql, params...)
-		return &Result{result: res, Err: err}
-	} else {
-		var res, err = this.tx.Exec(sql, params...)
-		return &Result{result: res, Err: err}
+// Exec 解析sql
+func (d *DB) Exec(sql string, args ...interface{}) *Result {
+	if !d.autoCommit {
+		var res, err = d.Tx.Exec(sql, args...)
+		return &Result{res, err}
 	}
+	var res, err = d.DB.Exec(sql, args...)
+	return &Result{res, err}
 }
 
-// Call 调用存储过程
-func (this *DB) Call(procedure string, params ...interface{}) *Rows {
-	var sql = "call " + procedure + "("
-	for i := 0; i < len(params); i++ {
-		if i > 0 {
-			sql += " ,?"
-		} else {
-			sql += "?"
-		}
+// Query 查询
+func (d *DB) Query(sql string, args ...interface{}) *Rows {
+	if !d.autoCommit {
+		var rows, err = d.Tx.Query(sql, args...)
+		return &Rows{Rows: rows, err: err}
 	}
-	sql += ")"
-	var rows, err = this.db.Query(sql, params...)
-	return &Rows{rows, err, nil}
+	var rows, err = d.DB.Query(sql, args...)
+	return &Rows{Rows: rows, err: err}
 }
 
-// 查询
-func (this *DB) Query(sql string, params ...interface{}) *Rows {
-	// log.Println("[MESQL]:", sql, "[ARGS]:", params)
-	if this.autocommit {
-		var rows, err = this.db.Query(sql, params...)
-		return &Rows{rows: rows, err: err}
-
-	} else {
-		var rows, err = this.tx.Query(sql, params...)
-		return &Rows{rows: rows, err: err}
+// QueryRow 查询单行
+func (d *DB) QueryRow(sql string, args ...interface{}) *Row {
+	if !d.autoCommit {
+		var row = d.Tx.QueryRow(sql, args...)
+		return &Row{row}
 	}
-
+	var row = d.DB.QueryRow(sql, args...)
+	return &Row{row}
 }
 
-// 查询最多单行
-func (this *DB) QueryRow(sql string, params ...interface{}) *Row {
-	if this.autocommit {
-		var row = this.db.QueryRow(sql, params...)
-		return &Row{row: row}
-	} else {
-		var row = this.tx.QueryRow(sql, params...)
-		return &Row{row: row}
+// Prepare 预处理
+func (d *DB) Prepare(sql string) *Stmt {
+	if !d.autoCommit {
+		var stmt, err = d.Tx.Prepare(sql)
+		return &Stmt{Stmt: stmt, err: err}
 	}
+	var stmt, err = d.DB.Prepare(sql)
+	return &Stmt{Stmt: stmt, err: err}
 }
 
-// 预处理
-func (this *DB) Prepare(sql string) *Stmt {
-	if this.autocommit {
-		var stmt, err = this.db.Prepare(sql)
-		return &Stmt{stmt: stmt, err: err}
-	} else {
-		var stmt, err = this.tx.Prepare(sql)
-		return &Stmt{stmt: stmt, err: err}
-	}
-}
-
-// 开启事务
-func (this *DB) Begin() bool {
+// Begin 开启事务
+func (d *DB) Begin() error {
 	var err error
-	if this.autocommit {
-		this.tx, err = this.db.Begin()
+	if d.autoCommit {
+		d.Tx, err = d.DB.Begin()
 		if err != nil {
-			return false
+			return err
 		}
-		this.autocommit = false
+		d.autoCommit = false
 	}
-	return true
+	return nil
 }
 
-// 提交事务
-func (this *DB) Commit() error {
-	if this.autocommit {
-		return ErrCommit
+// Commit 提交事务
+func (d *DB) Commit() error {
+	if d.autoCommit {
+		return errors.New("transaction closed")
 	}
-	var err = this.tx.Commit()
-	this.tx = nil
-	this.autocommit = true
+	d.autoCommit = true
+	var err = d.Tx.Commit()
 	return err
 }
 
-// 回滚
-func (this *DB) RollBack() error {
-	if this.autocommit {
-		return ErrRollBack
+// RollBack 回滚
+func (d *DB) RollBack() error {
+	if d.autoCommit {
+		return errors.New("transaction closed")
 	}
-	var err = this.tx.Rollback()
-	this.tx = nil
-	this.autocommit = true
+	d.autoCommit = true
+	var err = d.Tx.Rollback()
 	return err
 }
 
-// 使已经存在的状态生成事务的状态
-func (this *DB) Stmt(stmt *Stmt) *Stmt {
-	if this.autocommit {
-		return &Stmt{err: errors.New("事务没有开启")}
+// Stmt 使已经存在的状态生成事务的状态
+func (d *DB) Stmt(stmt *Stmt) *Stmt {
+	if d.autoCommit {
+		return &Stmt{err: errors.New("transaction closed")}
 	}
-	var s = this.tx.Stmt(stmt.stmt)
-	return &Stmt{stmt: s}
+	var s = d.Tx.Stmt(stmt.Stmt)
+	return &Stmt{Stmt: s}
 }
 
-// 返回连接的信息
-func (this *DB) Stats() sql.DBStats {
-	return this.db.Stats()
-}
-
-// 连接数
-func (this *DB) OpenConnetcions() int {
-	return this.db.Stats().OpenConnections
+// OpenConnetcions 连接数
+func (d *DB) OpenConnetcions() int {
+	return d.DB.Stats().OpenConnections
 }
