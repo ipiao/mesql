@@ -1,7 +1,11 @@
 package medb
 
 import (
+	"context"
+	"database/sql"
 	"testing"
+
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -47,7 +51,8 @@ func TestDBContxet(t *testing.T) {
 	db := OpenDB("test")
 	err = db.Ping()
 	t.Log(err == nil)
-
+	stats := db.Stats()
+	t.Log(stats)
 	row := db.Query("select * from user limit 1")
 	cols, err := row.Columns()
 	t.Log("cols:", cols, err == nil)
@@ -60,4 +65,24 @@ func TestDBContxet(t *testing.T) {
 		precision, scale, bo := ct.DecimalSize()
 		t.Log(dtName, ":", name, length, ok, precision, scale, bo)
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	err = db.PingContext(ctx)
+	t.Log(err == nil)
+	// time.Sleep(time.Second * 3)
+	// err = db.PingContext(ctx)
+	// t.Log(err != nil, err)
+	var opts = new(sql.TxOptions)
+	err = db.BeginTx(ctx, opts)
+	t.Log(err == nil)
+	stmt := db.Prepare(`insert into user(name,data,age,date)values('name1','data1',1,now())`)
+	defer stmt.Close()
+	t.Log(err == nil, err)
+	res := stmt.Exec()
+	t.Log(res.Err() == nil, res.Err())
+	t.Log(res.RowsAffected())
+	// time.Sleep(time.Second * 3)
+	err = db.Commit()
+	t.Log(err == nil, err)
 }

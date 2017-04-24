@@ -1,6 +1,7 @@
 package medb
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"sync"
@@ -38,6 +39,16 @@ func (d *DB) Exec(sql string, args ...interface{}) *Result {
 	return &Result{res, err}
 }
 
+// ExecContext 解析sql
+func (d *DB) ExecContext(ctx context.Context, sql string, args ...interface{}) *Result {
+	if !d.autoCommit {
+		var res, err = d.Tx.ExecContext(ctx, sql, args...)
+		return &Result{res, err}
+	}
+	var res, err = d.DB.ExecContext(ctx, sql, args...)
+	return &Result{res, err}
+}
+
 // Query 查询
 func (d *DB) Query(sql string, args ...interface{}) *Rows {
 	if !d.autoCommit {
@@ -45,6 +56,16 @@ func (d *DB) Query(sql string, args ...interface{}) *Rows {
 		return &Rows{Rows: rows, err: err}
 	}
 	var rows, err = d.DB.Query(sql, args...)
+	return &Rows{Rows: rows, err: err}
+}
+
+// QueryContext 查询
+func (d *DB) QueryContext(ctx context.Context, sql string, args ...interface{}) *Rows {
+	if !d.autoCommit {
+		var rows, err = d.Tx.QueryContext(ctx, sql, args...)
+		return &Rows{Rows: rows, err: err}
+	}
+	var rows, err = d.DB.QueryContext(ctx, sql, args...)
 	return &Rows{Rows: rows, err: err}
 }
 
@@ -68,11 +89,34 @@ func (d *DB) Prepare(sql string) *Stmt {
 	return &Stmt{Stmt: stmt, err: err}
 }
 
+// PrepareContext 预处理
+func (d *DB) PrepareContext(ctx context.Context, sql string) *Stmt {
+	if !d.autoCommit {
+		var stmt, err = d.Tx.PrepareContext(ctx, sql)
+		return &Stmt{Stmt: stmt, err: err}
+	}
+	var stmt, err = d.DB.PrepareContext(ctx, sql)
+	return &Stmt{Stmt: stmt, err: err}
+}
+
 // Begin 开启事务
 func (d *DB) Begin() error {
 	var err error
 	if d.autoCommit {
 		d.Tx, err = d.DB.Begin()
+		if err != nil {
+			return err
+		}
+		d.autoCommit = false
+	}
+	return nil
+}
+
+// BeginTx 开启事务
+func (d *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) error {
+	var err error
+	if d.autoCommit {
+		d.Tx, err = d.DB.BeginTx(ctx, opts)
 		if err != nil {
 			return err
 		}
