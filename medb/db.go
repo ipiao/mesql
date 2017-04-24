@@ -11,10 +11,11 @@ type DB struct {
 	*sql.DB
 	*sql.Tx
 	autoCommit bool
+	name       string
 }
 
 // MountDB 嵌入db
-func (d *DB) MountDB(db *sql.DB) error {
+func (d *DB) MountDB(db *sql.DB, name string) error {
 	var mu = new(sync.Mutex)
 	mu.Lock()
 	defer mu.Unlock()
@@ -23,6 +24,7 @@ func (d *DB) MountDB(db *sql.DB) error {
 	}
 	d.DB = db
 	d.autoCommit = true
+	d.name = name
 	return nil
 }
 

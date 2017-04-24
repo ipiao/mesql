@@ -1,58 +1,47 @@
-//// init.go 文件进行数据库初始化操作
 package medb
 
-//import (
-//	"database/sql"
-//	"database/sql/driver"
-//)
+import (
+	"database/sql"
+	"errors"
+	"sync"
+	"time"
+)
 
-//var (
-//	// 驱动映射
-//	drivers = map[string]*driver.Driver{}
-//	// 数据库连接
-//	dbs = map[string]*DB{}
-//	//
+var (
+	dbs            = map[string]*DB{}
+	maxOpenConnNum = 30
+	maxIdleConnNum = 10
+	maxLifeTime    = time.Minute * 30
+)
 
-//)
+// RegisterDB 注册数据库连接
+// name:给数据库连接的命名
+// driverName:驱动名
+// dataSourceName：数据库连接信息
+func RegisterDB(name, driverName, dataSourceName string) error {
+	var mu = sync.Mutex{}
+	mu.Lock()
+	defer mu.Unlock()
+	if dbs[name] != nil {
+		return errors.New("连接已存在")
+	}
+	var db, err = sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return err
+	}
+	db.SetMaxOpenConns(maxOpenConnNum)
+	db.SetMaxIdleConns(maxIdleConnNum)
+	db.SetConnMaxLifetime(maxLifeTime)
 
-//// 注册并命名驱动
-//// 如果同名驱动已经注册，返回错误;否则将驱动加入到驱动映射中
-//func RegisterDriver(name string, driver driver.Driver) error {
-//	if drivers[name] != nil {
-//		panic(ErrRegister)
-//	}
-//	if driver == nil {
-//		return ErrDriver
-//	}
-//	sql.Register(name, driver)
-//	drivers[name] = &driver
-//	return nil
-//}
+	dbs[name] = &DB{DB: db, autoCommit: true, name: name}
+	return db.Ping()
+}
 
-//// 注册数据库连接
-//// name:给数据库连接的命名
-//// driverName:驱动名
-//// dataSourceName：数据库连接信息
-//func RegisterDB(name, driverName, dataSourceName string) error {
-//	mu.Lock()
-//	defer mu.Unlock()
-//	if dbs[name] != nil {
-//		return ErrRegisterDB
-//	}
-//	var db, err = sql.Open(driverName, dataSourceName)
-//	if err != nil {
-//		return err
-//	}
-//	dbs[name] = &DB{db: db, autocommit: true, name: name}
-//	dbs[name].Init()
-//	return nil
-//}
-
-//// 打开连接
-//func OpenDB(name string) *DB {
-//	var db, ok = dbs[name]
-//	if ok {
-//		return db
-//	}
-//	return nil
-//}
+// OpenDB 打开连接
+func OpenDB(name string) *DB {
+	var db, ok = dbs[name]
+	if ok {
+		return db
+	}
+	return nil
+}

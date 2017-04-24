@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/ipiao/mesql/medb"
 )
 
 var reg = regexp.MustCompile(`\B[A-Z]`)
@@ -34,11 +32,11 @@ func SnakeName(base string) string {
 	return string(r)
 }
 
-// 获取结构体对应的表的名字,v必须为结构体
+// GetTableName 获取结构体对应的表的名字,v必须为结构体
 func GetTableName(v reflect.Value) string {
 	var tbName string
 	if v.Kind() == reflect.Struct {
-		var tbnameV = v.MethodByName(TableNameMethod)
+		var tbnameV = v.MethodByName("TableName")
 		if tbnameV.IsValid() {
 			var args = make([]reflect.Value, 0)
 			tbName = tbnameV.Call(args)[0].String()
@@ -53,7 +51,7 @@ func GetTableName(v reflect.Value) string {
 	return tbName
 }
 
-// 获取要插入的表列,v必须为结构体
+// GetColumns 获取要插入的表列,v必须为结构体
 func GetColumns(v reflect.Value) []string {
 	var columns []string
 	if v.Kind() == reflect.Struct {
@@ -63,11 +61,11 @@ func GetColumns(v reflect.Value) []string {
 			if f.Anonymous {
 				columns = append(columns, GetColumns(v.Field(i))...)
 			} else {
-				var colName = f.Tag.Get(medb.MeTag)
+				var colName = f.Tag.Get("db")
 				if colName == "" || colName == "_" {
 					colName = transFieldName(f.Name)
 				}
-				var ormtag = f.Tag.Get(OrmTag)
+				var ormtag = f.Tag.Get("meorm")
 				if ormtag == "_" {
 					continue
 				}
@@ -82,17 +80,17 @@ func GetColumns(v reflect.Value) []string {
 	return columns
 }
 
-// 获取值
+// GetValues 获取值
 func GetValues(v reflect.Value) [][]interface{} {
 	if v.Kind() == reflect.Struct {
-		var values [][]interface{} = make([][]interface{}, 1)
+		var values = make([][]interface{}, 1)
 		var l = v.NumField()
 		for i := 0; i < l; i++ {
 			var f = v.Type().Field(i)
 			if f.Anonymous {
 				values[0] = append(values[0], GetValues(v.Field(i))[0]...)
 			} else {
-				var ormtag = f.Tag.Get(OrmTag)
+				var ormtag = f.Tag.Get("meorm")
 				if ormtag == "_" {
 					continue
 				}

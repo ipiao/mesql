@@ -11,28 +11,29 @@ type whereConstraint struct {
 	values    []interface{}
 }
 
+// Where where
 type Where struct {
 	where []*whereConstraint
 	err   error
 }
 
-// 全匹配
-func (this *Where) WhereLike(col string, arg interface{}) *Where {
-	return this.whereLike(col, arg, 0)
+// WhereLike 全匹配
+func (w *Where) WhereLike(col string, arg interface{}) *Where {
+	return w.whereLike(col, arg, 0)
 }
 
-// 左匹配
-func (this *Where) WhereLikeL(col string, arg interface{}) *Where {
-	return this.whereLike(col, arg, -1)
+// WhereLikeL 左匹配
+func (w *Where) WhereLikeL(col string, arg interface{}) *Where {
+	return w.whereLike(col, arg, -1)
 }
 
-// 右匹配
-func (this *Where) WhereLikeR(col string, arg interface{}) *Where {
-	return this.whereLike(col, arg, 1)
+// WhereLikeR 右匹配
+func (w *Where) WhereLikeR(col string, arg interface{}) *Where {
+	return w.whereLike(col, arg, 1)
 }
 
 // like -1表示左边匹配，0全匹配，1.右边匹配
-func (this *Where) whereLike(col string, arg interface{}, likekind int8) *Where {
+func (w *Where) whereLike(col string, arg interface{}, likekind int8) *Where {
 	var where = &whereConstraint{
 		condition: fmt.Sprintf("%s LIKE ?", col),
 	}
@@ -45,22 +46,22 @@ func (this *Where) whereLike(col string, arg interface{}, likekind int8) *Where 
 		value = fmt.Sprint(fmt.Sprintf("%v", arg), "%")
 	}
 	where.values = append(where.values, value)
-	this.where = append(this.where, where)
-	return this
+	w.where = append(w.where, where)
+	return w
 }
 
-// In
-func (this *Where) WhereIn(col string, args ...interface{}) *Where {
-	return this.wherein(col, args...)
+// WhereIn In
+func (w *Where) WhereIn(col string, args ...interface{}) *Where {
+	return w.wherein(col, args...)
 }
 
 // 查询条件in的解析
-func (this *Where) wherein(col string, args ...interface{}) *Where {
+func (w *Where) wherein(col string, args ...interface{}) *Where {
 	var v = reflect.Indirect(reflect.ValueOf(args))
 	var k = v.Kind()
 	if k == reflect.Slice || k == reflect.Array {
 		if v.Len() == 0 {
-			return this
+			return w
 		}
 		var buf = bufPool.Get()
 		defer bufPool.Put(buf)
@@ -99,33 +100,33 @@ func (this *Where) wherein(col string, args ...interface{}) *Where {
 			}
 		case reflect.Slice, reflect.Array:
 			if v.Len() > 1 {
-				this.err = errors.New(fmt.Sprintf("WhereIn 参数错误"))
-				return this
+				w.err = errors.New("WhereIn 参数错误")
+				return w
 			}
 			v = v.Index(0).Elem()
 			var params []interface{}
 			for i := 0; i < v.Len(); i++ {
 				params = append(params, v.Index(i).Interface())
 			}
-			return this.wherein(col, params...)
+			return w.wherein(col, params...)
 		default:
-			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
+			w.err = fmt.Errorf("in不支持的类型%s", v.Index(0).Elem().Kind().String())
 		}
 
-		this.where = append(this.where, where)
+		w.where = append(w.where, where)
 	} else {
-		this.err = errors.New("参数格式错误，必须为切片或数组")
+		w.err = errors.New("参数格式错误，必须为切片或数组")
 	}
-	return this
+	return w
 }
 
 // 查询条件in的解析
-func (this *Where) wherenotin(col string, args ...interface{}) *Where {
+func (w *Where) wherenotin(col string, args ...interface{}) *Where {
 	var v = reflect.Indirect(reflect.ValueOf(args))
 	var k = v.Kind()
 	if k == reflect.Slice || k == reflect.Array {
 		if v.Len() == 0 {
-			return this
+			return w
 		}
 		var buf = bufPool.Get()
 		defer bufPool.Put(buf)
@@ -164,22 +165,22 @@ func (this *Where) wherenotin(col string, args ...interface{}) *Where {
 			}
 		case reflect.Slice, reflect.Array:
 			if v.Len() > 1 {
-				this.err = errors.New(fmt.Sprintf("WhereIn 参数错误"))
-				return this
+				w.err = errors.New("WhereIn 参数错误")
+				return w
 			}
 			v = v.Index(0).Elem()
 			var params []interface{}
 			for i := 0; i < v.Len(); i++ {
 				params = append(params, v.Index(i).Interface())
 			}
-			return this.wherein(col, params...)
+			return w.wherein(col, params...)
 		default:
-			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
+			w.err = fmt.Errorf("in不支持的类型%s", v.Index(0).Elem().Kind().String())
 		}
 
-		this.where = append(this.where, where)
+		w.where = append(w.where, where)
 	} else {
-		this.err = errors.New("参数格式错误，必须为切片或数组")
+		w.err = errors.New("参数格式错误，必须为切片或数组")
 	}
-	return this
+	return w
 }

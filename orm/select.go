@@ -8,8 +8,8 @@ import (
 	"github.com/ipiao/mesql/medb"
 )
 
-// 查询
-type selectBuilder struct {
+// SelectBuilder 查询
+type SelectBuilder struct {
 	Executor
 	connname string
 	distinct bool
@@ -29,107 +29,107 @@ type selectBuilder struct {
 	args        []interface{}
 }
 
-// 选择查询列
-func (this *selectBuilder) Select(columns ...string) *selectBuilder {
-	this.columns = append(this.columns, columns...)
-	return this
+// Select 选择查询列
+func (s *SelectBuilder) Select(columns ...string) *SelectBuilder {
+	s.columns = append(s.columns, columns...)
+	return s
 }
 
-// distinct
-func (this *selectBuilder) Distinct() *selectBuilder {
-	this.distinct = true
-	return this
+// Distinct distinct
+func (s *SelectBuilder) Distinct() *SelectBuilder {
+	s.distinct = true
+	return s
 }
 
-// from
-func (this *selectBuilder) From(from string) *selectBuilder {
-	this.from = from
-	return this
+// From from
+func (s *SelectBuilder) From(from string) *SelectBuilder {
+	s.from = from
+	return s
 }
 
-// order by
-func (this *selectBuilder) OrderBy(order string) *selectBuilder {
-	this.orderbys = append(this.orderbys, order)
-	return this
+// OrderBy order by
+func (s *SelectBuilder) OrderBy(order string) *SelectBuilder {
+	s.orderbys = append(s.orderbys, order)
+	return s
 }
 
-// group by
-func (this *selectBuilder) GroupBy(group string) *selectBuilder {
-	this.groupbys = append(this.groupbys, group)
-	return this
+// GroupBy group by
+func (s *SelectBuilder) GroupBy(group string) *SelectBuilder {
+	s.groupbys = append(s.groupbys, group)
+	return s
 }
 
-// limit
-func (this *selectBuilder) Limit(limit int64) *selectBuilder {
-	this.limitvalid = true
-	this.limit = limit
-	return this
+// Limit limit
+func (s *SelectBuilder) Limit(limit int64) *SelectBuilder {
+	s.limitvalid = true
+	s.limit = limit
+	return s
 }
 
-// offset
-func (this *selectBuilder) Offset(offset int64) *selectBuilder {
-	this.offsetvalid = true
-	this.offset = offset
-	return this
+// Offset offset
+func (s *SelectBuilder) Offset(offset int64) *SelectBuilder {
+	s.offsetvalid = true
+	s.offset = offset
+	return s
 }
 
-// where
-func (this *selectBuilder) Where(condition string, args ...interface{}) *selectBuilder {
-	this.where.where = append(this.where.where, &whereConstraint{
+// Where where
+func (s *SelectBuilder) Where(condition string, args ...interface{}) *SelectBuilder {
+	s.where.where = append(s.where.where, &whereConstraint{
 		condition: condition,
 		values:    args,
 	})
-	return this
+	return s
 }
 
-// having
-func (this *selectBuilder) Having(condition string, values ...interface{}) *selectBuilder {
-	this.having = append(this.having, &whereConstraint{
+// Having having
+func (s *SelectBuilder) Having(condition string, values ...interface{}) *SelectBuilder {
+	s.having = append(s.having, &whereConstraint{
 		condition: condition,
 		values:    values,
 	})
-	return this
+	return s
 }
 
 // reset
-func (this *selectBuilder) reset() *selectBuilder {
-	this.distinct = false
-	this.columns = this.columns[:0]
-	this.from = ""
-	this.where = new(Where)
-	this.orderbys = this.orderbys[:0]
-	this.groupbys = this.groupbys[:0]
-	this.limit = 0
-	this.limitvalid = false
-	this.offset = 0
-	this.offsetvalid = false
-	this.having = make([]*whereConstraint, 0, 0)
-	this.err = nil
-	this.sql = ""
-	this.args = this.args[:0]
-	return this
+func (s *SelectBuilder) reset() *SelectBuilder {
+	s.distinct = false
+	s.columns = s.columns[:0]
+	s.from = ""
+	s.where = new(Where)
+	s.orderbys = s.orderbys[:0]
+	s.groupbys = s.groupbys[:0]
+	s.limit = 0
+	s.limitvalid = false
+	s.offset = 0
+	s.offsetvalid = false
+	s.having = make([]*whereConstraint, 0, 0)
+	s.err = nil
+	s.sql = ""
+	s.args = s.args[:0]
+	return s
 }
 
-// tosql
-func (this *selectBuilder) ToSQL() (string, []interface{}) {
-	if len(this.sql) > 0 {
-		return this.sql, this.args
+// ToSQL tosql
+func (s *SelectBuilder) ToSQL() (string, []interface{}) {
+	if len(s.sql) > 0 {
+		return s.sql, s.args
 	}
-	return this.tosql()
+	return s.tosql()
 }
 
 // 把查询条件组成sql并放到查询体中
-func (this *selectBuilder) tosql() (string, []interface{}) {
+func (s *SelectBuilder) tosql() (string, []interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	if this.where.err != nil {
-		this.err = this.where.err
+	if s.where.err != nil {
+		s.err = s.where.err
 		return "", nil
 	}
-	if len(this.columns) == 0 {
+	if len(s.columns) == 0 {
 		panic("没有指定列")
 	}
-	if len(this.from) == 0 {
+	if len(s.from) == 0 {
 		panic("没有指定表")
 	}
 	buf := bufPool.Get()
@@ -138,21 +138,21 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 	var args []interface{}
 	buf.WriteString("SELECT ")
 
-	if this.distinct {
+	if s.distinct {
 		buf.WriteString("DISTINCT ")
 	}
-	for i, s := range this.columns {
+	for i, s := range s.columns {
 		if i > 0 {
 			buf.WriteString(", ")
 		}
 		buf.WriteString(s)
 	}
 	buf.WriteString(" FROM ")
-	buf.WriteString(this.from)
+	buf.WriteString(s.from)
 
-	if len(this.where.where) > 0 {
+	if len(s.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where.where {
+		for i, cond := range s.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -165,18 +165,18 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 			}
 		}
 	}
-	if len(this.groupbys) > 0 {
+	if len(s.groupbys) > 0 {
 		buf.WriteString(" GROUP BY ")
-		for i, s := range this.groupbys {
+		for i, s := range s.groupbys {
 			if i > 0 {
 				buf.WriteString(", ")
 			}
 			buf.WriteString(s)
 		}
 	}
-	if len(this.having) > 0 {
+	if len(s.having) > 0 {
 		buf.WriteString(" HAVING ")
-		for i, cond := range this.having {
+		for i, cond := range s.having {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -189,72 +189,71 @@ func (this *selectBuilder) tosql() (string, []interface{}) {
 			}
 		}
 	}
-	if len(this.orderbys) > 0 {
+	if len(s.orderbys) > 0 {
 		buf.WriteString(" ORDER BY ")
-		for i, s := range this.orderbys {
+		for i, s := range s.orderbys {
 			if i > 0 {
 				buf.WriteString(", ")
 			}
 			buf.WriteString(s)
 		}
 	}
-	if this.limitvalid {
+	if s.limitvalid {
 		buf.WriteString(" LIMIT ?")
-		args = append(args, this.limit)
+		args = append(args, s.limit)
 	}
-	if this.offsetvalid {
+	if s.offsetvalid {
 		buf.WriteString(" OFFSET ?")
-		args = append(args, this.offset)
+		args = append(args, s.offset)
 	}
-	this.sql = buf.String()
-	this.args = args
-	return this.sql, this.args
+	s.sql = buf.String()
+	s.args = args
+	return s.sql, s.args
 }
 
-// 查询不建议使用
-func (this *selectBuilder) Exec() *medb.Result {
-	if len(this.sql) == 0 {
-		this.tosql()
+// Exec 查询不建议使用
+func (s *SelectBuilder) Exec() *medb.Result {
+	var res = new(medb.Result)
+	if len(s.sql) == 0 {
+		s.tosql()
 	}
-	if this.err != nil {
-		var res = &medb.Result{
-			Err: this.err,
-		}
+	if s.err != nil {
+		res.SetErr(s.err)
 		return res
 	}
-	return connections[this.connname].db.Exec(this.sql, this.args...)
+	return connections[s.connname].Exec(s.sql, s.args...)
 }
 
-// 解析到结构体，数组。。。
-func (this *selectBuilder) QueryTo(models interface{}) (int, error) {
-	if len(this.sql) == 0 {
-		this.tosql()
+// QueryTo 解析到结构体，数组。。。
+func (s *SelectBuilder) QueryTo(models interface{}) (int, error) {
+	if len(s.sql) == 0 {
+		s.tosql()
 	}
-	if this.err != nil {
-		return 0, this.err
+	if s.err != nil {
+		return 0, s.err
 	}
-	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
+	return connections[s.connname].Query(s.sql, s.args...).ScanTo(models)
 }
 
-// 把查询组成sql并解析
-func (this *selectBuilder) QueryNext(dest ...interface{}) error {
-	if len(this.sql) == 0 {
-		this.tosql()
+// QueryNext 把查询组成sql并解析
+func (s *SelectBuilder) QueryNext(dest ...interface{}) error {
+	if len(s.sql) == 0 {
+		s.tosql()
 	}
-	if this.err != nil {
-		return this.err
+	if s.err != nil {
+		return s.err
 	}
-	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
+	return connections[s.connname].Query(s.sql, s.args...).ScanNext(dest...)
 }
 
-// limit和offset的复用
-func (this *selectBuilder) LimitPP(page, pagesize int64) *selectBuilder {
+// LimitPP limit和offset的复用
+func (s *SelectBuilder) LimitPP(page, pagesize int64) *SelectBuilder {
 	var offset = (page - 1) * pagesize
-	return this.Limit(pagesize).Offset(offset)
+	return s.Limit(pagesize).Offset(offset)
 }
 
-// 查询符合条件的总数目
-func (this *selectBuilder) CountCond(countCond ...string) (int64, string, error) {
+// CountCond 查询符合条件的总数目
+func (s *SelectBuilder) CountCond(countCond ...string) (int64, string, error) {
 	var countcond string
 	var count int64
 	if len(countCond) == 0 {
@@ -262,18 +261,13 @@ func (this *selectBuilder) CountCond(countCond ...string) (int64, string, error)
 	} else {
 		countcond = countCond[0]
 	}
-	//	if len(this.having) > 0 {
-	//		var sql, args = this.countresult("alie", countcond)
-	//		var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
-	//		return count, sql, err
-	//	}
-	var sql, args = this.countsql(countcond)
-	var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
+	var sql, args = s.countsql(countcond)
+	var err = connections[s.connname].Query(sql, args...).ScanNext(&count)
 	return count, sql, err
 }
 
-// 查询符合条件的总数目
-func (this *selectBuilder) CountResult(alies string, countCond ...string) (int64, string, error) {
+// CountResult 查询符合条件的总数目
+func (s *SelectBuilder) CountResult(alies string, countCond ...string) (int64, string, error) {
 	var countcond string
 	var count int64
 	if len(countCond) == 0 {
@@ -281,13 +275,13 @@ func (this *selectBuilder) CountResult(alies string, countCond ...string) (int64
 	} else {
 		countcond = countCond[0]
 	}
-	var sql, args = this.countresult(alies, countcond)
-	var err = connections[this.connname].db.Query(sql, args...).ScanNext(&count)
+	var sql, args = s.countresult(alies, countcond)
+	var err = connections[s.connname].Query(sql, args...).ScanNext(&count)
 	return count, sql, err
 }
 
 // 生成查询总条数的sql
-func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
+func (s *SelectBuilder) countsql(countCond string) (string, []interface{}) {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -295,11 +289,11 @@ func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 	buf.WriteString("SELECT ")
 	buf.WriteString(countCond)
 	buf.WriteString(" FROM ")
-	buf.WriteString(this.from)
+	buf.WriteString(s.from)
 
-	if len(this.where.where) > 0 {
+	if len(s.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where.where {
+		for i, cond := range s.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -312,18 +306,18 @@ func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 			}
 		}
 	}
-	if len(this.groupbys) > 0 {
+	if len(s.groupbys) > 0 {
 		buf.WriteString(" GROUP BY ")
-		for i, s := range this.groupbys {
+		for i, s := range s.groupbys {
 			if i > 0 {
 				buf.WriteString(", ")
 			}
 			buf.WriteString(s)
 		}
 	}
-	if len(this.having) > 0 {
+	if len(s.having) > 0 {
 		buf.WriteString(" HAVING ")
-		for i, cond := range this.having {
+		for i, cond := range s.having {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -340,12 +334,12 @@ func (this *selectBuilder) countsql(countCond string) (string, []interface{}) {
 }
 
 // 把查询条件组成sql并放到查询体中
-func (this *selectBuilder) countresult(alies, countCond string) (string, []interface{}) {
+func (s *SelectBuilder) countresult(alies, countCond string) (string, []interface{}) {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 	var args []interface{}
-	if this.where.err != nil {
-		this.err = this.where.err
+	if s.where.err != nil {
+		s.err = s.where.err
 		return "", nil
 	}
 	buf.WriteString("SELECT ")
@@ -353,21 +347,21 @@ func (this *selectBuilder) countresult(alies, countCond string) (string, []inter
 	buf.WriteString(" FROM( ")
 	buf.WriteString("SELECT ")
 
-	if this.distinct {
+	if s.distinct {
 		buf.WriteString("DISTINCT ")
 	}
-	for i, s := range this.columns {
+	for i, s := range s.columns {
 		if i > 0 {
 			buf.WriteString(", ")
 		}
 		buf.WriteString(s)
 	}
 	buf.WriteString(" FROM ")
-	buf.WriteString(this.from)
+	buf.WriteString(s.from)
 
-	if len(this.where.where) > 0 {
+	if len(s.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where.where {
+		for i, cond := range s.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -380,18 +374,18 @@ func (this *selectBuilder) countresult(alies, countCond string) (string, []inter
 			}
 		}
 	}
-	if len(this.groupbys) > 0 {
+	if len(s.groupbys) > 0 {
 		buf.WriteString(" GROUP BY ")
-		for i, s := range this.groupbys {
+		for i, s := range s.groupbys {
 			if i > 0 {
 				buf.WriteString(", ")
 			}
 			buf.WriteString(s)
 		}
 	}
-	if len(this.having) > 0 {
+	if len(s.having) > 0 {
 		buf.WriteString(" HAVING ")
-		for i, cond := range this.having {
+		for i, cond := range s.having {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -409,85 +403,30 @@ func (this *selectBuilder) countresult(alies, countCond string) (string, []inter
 	return buf.String(), args
 }
 
-//-------------- 关于Where条件的补充
-// In
-func (this *selectBuilder) WhereIn(col string, args ...interface{}) *selectBuilder {
-	this.where.wherein(col, args...)
-	return this
+// WhereIn In
+func (s *SelectBuilder) WhereIn(col string, args ...interface{}) *SelectBuilder {
+	s.where.wherein(col, args...)
+	return s
 }
 
-// In
-func (this *selectBuilder) WhereNotIn(col string, args ...interface{}) *selectBuilder {
-	this.where.wherenotin(col, args...)
-	return this
+// WhereNotIn In
+func (s *SelectBuilder) WhereNotIn(col string, args ...interface{}) *SelectBuilder {
+	s.where.wherenotin(col, args...)
+	return s
 }
 
-//// 查询条件in的解析
-//func (this *selectBuilder) wherein(col string, args interface{}) *selectBuilder {
-//	var v = reflect.Indirect(reflect.ValueOf(args))
-//	var k = v.Kind()
-//	if k == reflect.Slice || k == reflect.Array {
-//		if v.Len() == 0 {
-//			return this
-//		}
-//		var buf = bufPool.Get()
-//		defer bufPool.Put(buf)
-//		var where = new(whereConstraint)
-//		buf.WriteString(fmt.Sprintf("%s IN(", col))
-//		for i := 0; i < v.Len(); i++ {
-//			if i > 0 {
-//				buf.WriteString(" ,?")
-//			} else {
-//				buf.WriteRune('?')
-//			}
-//		}
-//		buf.WriteRune(')')
-//		where.condition = buf.String()
-//		switch v.Index(0).Elem().Kind() {
-//		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-//			for i := 0; i < v.Len(); i++ {
-//				where.values = append(where.values, v.Index(i).Elem().Int())
-//			}
-//		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-//			for i := 0; i < v.Len(); i++ {
-//				where.values = append(where.values, v.Index(i).Elem().Uint())
-//			}
-
-//		case reflect.Float32, reflect.Float64:
-//			for i := 0; i < v.Len(); i++ {
-//				where.values = append(where.values, v.Index(i).Elem().Float())
-//			}
-//		case reflect.Bool:
-//			for i := 0; i < v.Len(); i++ {
-//				where.values = append(where.values, v.Index(i).Bool())
-//			}
-//		case reflect.String:
-//			for i := 0; i < v.Len(); i++ {
-//				where.values = append(where.values, v.Index(i).Elem().String())
-//			}
-//		default:
-//			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
-//		}
-
-//		this.where.where = append(this.where.where, where)
-//	} else {
-//		this.err = errors.New("参数格式错误，必须为切片或数组")
-//	}
-//	return this
-//}
-
-// In
-func (this *selectBuilder) havingIn(col string, args ...interface{}) *selectBuilder {
-	return this.havingin(col, args)
+// havingIn In
+func (s *SelectBuilder) havingIn(col string, args ...interface{}) *SelectBuilder {
+	return s.havingin(col, args)
 }
 
-// 查询条件in的解析
-func (this *selectBuilder) havingin(col string, args interface{}) *selectBuilder {
+// havingin 查询条件in的解析
+func (s *SelectBuilder) havingin(col string, args interface{}) *SelectBuilder {
 	var v = reflect.Indirect(reflect.ValueOf(args))
 	var k = v.Kind()
 	if k == reflect.Slice || k == reflect.Array {
 		if v.Len() == 0 {
-			return this
+			return s
 		}
 		var buf = bufPool.Get()
 		defer bufPool.Put(buf)
@@ -525,30 +464,30 @@ func (this *selectBuilder) havingin(col string, args interface{}) *selectBuilder
 				where.values = append(where.values, v.Index(i).Elem().String())
 			}
 		default:
-			this.err = errors.New(fmt.Sprintf("in不支持的类型%s", v.Index(0).Elem().Kind().String()))
+			s.err = fmt.Errorf("in不支持的类型%s", v.Index(0).Elem().Kind().String())
 		}
 
-		this.having = append(this.having, where)
+		s.having = append(s.having, where)
 	} else {
-		this.err = errors.New("参数格式错误，必须为切片或数组")
+		s.err = errors.New("参数格式错误，必须为切片或数组")
 	}
-	return this
+	return s
 }
 
-// 全匹配
-func (this *selectBuilder) WhereLike(col string, arg interface{}) *selectBuilder {
-	this.where.whereLike(col, arg, 0)
-	return this
+// WhereLike 全匹配
+func (s *SelectBuilder) WhereLike(col string, arg interface{}) *SelectBuilder {
+	s.where.whereLike(col, arg, 0)
+	return s
 }
 
-// 左匹配
-func (this *selectBuilder) WhereLikeL(col string, arg interface{}) *selectBuilder {
-	this.where.whereLike(col, arg, -1)
-	return this
+// WhereLikeL 左匹配
+func (s *SelectBuilder) WhereLikeL(col string, arg interface{}) *SelectBuilder {
+	s.where.whereLike(col, arg, -1)
+	return s
 }
 
-// 右匹配
-func (this *selectBuilder) WhereLikeR(col string, arg interface{}) *selectBuilder {
-	this.where.whereLike(col, arg, 1)
-	return this
+// WhereLikeR 右匹配
+func (s *SelectBuilder) WhereLikeR(col string, arg interface{}) *SelectBuilder {
+	s.where.whereLike(col, arg, 1)
+	return s
 }

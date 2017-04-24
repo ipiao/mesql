@@ -1,12 +1,11 @@
 package meorm
 
 import (
-	"errors"
-
 	"github.com/ipiao/mesql/medb"
 )
 
-type deleteBuilder struct {
+// DeleteBuilder 删除
+type DeleteBuilder struct {
 	Executor
 	connname   string
 	sql        string
@@ -19,52 +18,52 @@ type deleteBuilder struct {
 	orderbys   []string
 }
 
-// reset
-func (this *deleteBuilder) reset() *deleteBuilder {
-	this.table = ""
-	this.where = new(Where)
-	this.orderbys = this.orderbys[:0]
-	this.limit = 0
-	this.limitvalid = false
-	this.err = nil
-	this.sql = ""
-	this.args = this.args[:0]
-	return this
+func (d *DeleteBuilder) reset() *DeleteBuilder {
+	d.table = ""
+	d.where = new(Where)
+	d.orderbys = d.orderbys[:0]
+	d.limit = 0
+	d.limitvalid = false
+	d.err = nil
+	d.sql = ""
+	d.args = d.args[:0]
+	return d
 }
 
-// where 条件
-func (this *deleteBuilder) Where(condition string, args ...interface{}) *deleteBuilder {
-	this.where.where = append(this.where.where, &whereConstraint{
+// Where 条件
+func (d *DeleteBuilder) Where(condition string, args ...interface{}) *DeleteBuilder {
+	d.where.where = append(d.where.where, &whereConstraint{
 		condition: condition,
 		values:    args,
 	})
-	return this
+	return d
 }
 
-func (this *deleteBuilder) WhereIn(col string, args ...interface{}) *deleteBuilder {
-	this.where.wherein(col, args...)
-	return this
+// WhereIn in条件
+func (d *DeleteBuilder) WhereIn(col string, args ...interface{}) *DeleteBuilder {
+	d.where.wherein(col, args...)
+	return d
 }
 
-// orderby 条件
-func (this *deleteBuilder) OrderBy(order string) *deleteBuilder {
-	this.orderbys = append(this.orderbys, order)
-	return this
+// OrderBy 条件
+func (d *DeleteBuilder) OrderBy(order string) *DeleteBuilder {
+	d.orderbys = append(d.orderbys, order)
+	return d
 }
 
-// limit
-func (this *deleteBuilder) Limit(limit int64) *deleteBuilder {
-	this.limitvalid = true
-	this.limit = limit
-	return this
+// Limit 条件
+func (d *DeleteBuilder) Limit(limit int64) *DeleteBuilder {
+	d.limitvalid = true
+	d.limit = limit
+	return d
 }
 
 // 生成sql
-func (this *deleteBuilder) tosql() (string, []interface{}) {
+func (d *DeleteBuilder) tosql() (string, []interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	if this.where.err != nil {
-		this.err = this.where.err
+	if d.where.err != nil {
+		d.err = d.where.err
 		return "", nil
 	}
 	buf := bufPool.Get()
@@ -72,11 +71,11 @@ func (this *deleteBuilder) tosql() (string, []interface{}) {
 
 	var args []interface{}
 	buf.WriteString("DELETE FROM ")
-	buf.WriteString(this.table)
+	buf.WriteString(d.table)
 
-	if len(this.where.where) > 0 {
+	if len(d.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where.where {
+		for i, cond := range d.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -90,67 +89,42 @@ func (this *deleteBuilder) tosql() (string, []interface{}) {
 		}
 	}
 
-	if len(this.orderbys) > 0 {
+	if len(d.orderbys) > 0 {
 		buf.WriteString(" ORDER BY ")
-		for i, s := range this.orderbys {
+		for i, s := range d.orderbys {
 			if i > 0 {
 				buf.WriteString(", ")
 			}
 			buf.WriteString(s)
 		}
 	}
-	if this.limitvalid {
+	if d.limitvalid {
 		buf.WriteString(" LIMIT ?")
-		args = append(args, this.limit)
+		args = append(args, d.limit)
 	}
 
-	this.sql = buf.String()
-	this.args = args
-	return this.sql, this.args
+	d.sql = buf.String()
+	d.args = args
+	return d.sql, d.args
 }
 
-// tosql
-func (this *deleteBuilder) ToSQL() (string, []interface{}) {
-	if len(this.sql) > 0 {
-		return this.sql, this.args
+// ToSQL 对外
+func (d *DeleteBuilder) ToSQL() (string, []interface{}) {
+	if len(d.sql) > 0 {
+		return d.sql, d.args
 	}
-	return this.tosql()
+	return d.tosql()
 }
 
-// 执行
-func (this *deleteBuilder) Exec() *medb.Result {
-	if len(this.sql) == 0 {
-		this.tosql()
+// Exec 执行
+func (d *DeleteBuilder) Exec() *medb.Result {
+	var res = new(medb.Result)
+	if len(d.sql) == 0 {
+		d.tosql()
 	}
-	if this.err != nil {
-		var res = &medb.Result{
-			Err: this.err,
-		}
+	if d.err != nil {
+		res.SetErr(d.err)
 		return res
 	}
-	return connections[this.connname].db.Exec(this.sql, this.args...)
-}
-
-// 解析到结构体，数组。。。
-func (this *deleteBuilder) QueryTo(models interface{}) (int, error) {
-	//	if len(this.sql) == 0 {
-	//		this.tosql()
-	//	}
-	//	if this.err != nil {
-	//		return 0, this.err
-	//	}
-	//	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
-	return 0, errors.New("[meorm]:Delete 不能使用该方法")
-}
-
-// 把查询组成sql并解析
-func (this *deleteBuilder) QueryNext(dest ...interface{}) error {
-	//	if len(this.sql) == 0 {
-	//		this.tosql()
-	//	}
-	//	if this.err != nil {
-	//		return this.err
-	//	}
-	//	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
-	return errors.New("[meorm]:Delete 不能使用该方法")
+	return connections[d.connname].Exec(d.sql, d.args...)
 }

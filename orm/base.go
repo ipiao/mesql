@@ -2,59 +2,54 @@ package meorm
 
 import "github.com/ipiao/mesql/medb"
 
-// 连接
+// Conn 连接
 type Conn struct {
 	name string
-	db   *medb.DB
+	*medb.DB
 }
 
-// 返回连接名
-func (this *Conn) Name() string {
-	return this.name
+// Name 返回连接名
+func (c *Conn) Name() string {
+	return c.name
 }
 
-// 返回连接名
-func (this *Conn) DB() *medb.DB {
-	return this.db
-}
-
-// 直接写sql
-func (this *Conn) SQL(sql string, args ...interface{}) *commonBuilder {
-	return &commonBuilder{
+// SQL 直接写sql
+func (c *Conn) SQL(sql string, args ...interface{}) *CommonBuilder {
+	return &CommonBuilder{
 		sql:      sql,
 		args:     args,
-		connname: this.name,
+		connname: c.name,
 	}
 }
 
-// 生成查询构造器
-func (this *Conn) Select(cols ...string) *selectBuilder {
-	var builder = new(selectBuilder).reset()
-	builder.connname = this.name
+// Select 生成查询构造器
+func (c *Conn) Select(cols ...string) *SelectBuilder {
+	var builder = new(SelectBuilder).reset()
+	builder.connname = c.name
 	builder.columns = append(builder.columns, cols...)
 	return builder
 }
 
-// 生成更新构造器
-func (this *Conn) Update(table string) *updateBuilder {
-	var builder = new(updateBuilder).reset()
-	builder.connname = this.name
+// Update 生成更新构造器
+func (c *Conn) Update(table string) *UpdateBuilder {
+	var builder = new(UpdateBuilder).reset()
+	builder.connname = c.name
 	builder.table = table
 	return builder
 }
 
-// 生成插入构造器
-func (this *Conn) InsertInto(table string) *insertBuilder {
-	var builder = new(insertBuilder).reset()
-	builder.connname = this.name
+// InsertInto 生成插入构造器
+func (c *Conn) InsertInto(table string) *InsertBuilder {
+	var builder = new(InsertBuilder).reset()
+	builder.connname = c.name
 	builder.table = table
 	return builder
 }
 
-// 生成删除构造器
-func (this *Conn) DeleteFrom(table string) *deleteBuilder {
-	var builder = new(deleteBuilder).reset()
-	builder.connname = this.name
+// DeleteFrom 生成删除构造器
+func (c *Conn) DeleteFrom(table string) *DeleteBuilder {
+	var builder = new(DeleteBuilder).reset()
+	builder.connname = c.name
 	builder.table = table
 	return builder
 }

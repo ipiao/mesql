@@ -2,37 +2,37 @@ package meorm
 
 import "github.com/ipiao/mesql/medb"
 
-// 最基本的sql构造，直接写sql
-type commonBuilder struct {
+// CommonBuilder 最基本的sql构造，直接写sql
+type CommonBuilder struct {
 	Executor
 	connname string
 	sql      string
 	args     []interface{}
 }
 
-// 继续拼接
-func (this *commonBuilder) AppendSQL(sql string, args ...interface{}) *commonBuilder {
-	this.sql += " " + sql
-	this.args = append(this.args, args...)
-	return this
+// AppendSQL 继续拼接
+func (comm *CommonBuilder) AppendSQL(sql string, args ...interface{}) *CommonBuilder {
+	comm.sql += " " + sql
+	comm.args = append(comm.args, args...)
+	return comm
 }
 
-// 查询不建议使用
-func (this *commonBuilder) Exec() *medb.Result {
-	return connections[this.connname].db.Exec(this.sql, this.args...)
+// Exec 查询不建议使用
+func (comm *CommonBuilder) Exec() *medb.Result {
+	return connections[comm.connname].Exec(comm.sql, comm.args...)
 }
 
-// 解析到结构体，数组。。。
-func (this *commonBuilder) QueryTo(models interface{}) (int, error) {
-	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
+// QueryTo 解析到结构体，数组。。。
+func (comm *CommonBuilder) QueryTo(models interface{}) (int, error) {
+	return connections[comm.connname].Query(comm.sql, comm.args...).ScanTo(models)
 }
 
-// 把查询组成sql并解析
-func (this *commonBuilder) QueryNext(dest ...interface{}) error {
-	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
+// QueryNext 把查询组成sql并解析
+func (comm *CommonBuilder) QueryNext(dest ...interface{}) error {
+	return connections[comm.connname].Query(comm.sql, comm.args...).ScanNext(dest...)
 }
 
-// 把查询组成sql并解析
-func (this *commonBuilder) ToSQL() (string, []interface{}) {
-	return this.sql, this.args
+// ToSQL 把查询组成sql并解析
+func (comm *CommonBuilder) ToSQL() (string, []interface{}) {
+	return comm.sql, comm.args
 }

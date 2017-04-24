@@ -1,13 +1,11 @@
 package meorm
 
 import (
-	"errors"
-
 	"github.com/ipiao/mesql/medb"
 )
 
-// insert构造器
-type insertBuilder struct {
+// InsertBuilder insert构造器
+type InsertBuilder struct {
 	Executor
 	connname string
 	table    string
@@ -19,58 +17,49 @@ type insertBuilder struct {
 }
 
 // reset
-func (this *insertBuilder) reset() *insertBuilder {
-	this.table = ""
-	this.columns = this.columns[:0]
-	this.values = make([][]interface{}, 0, 0)
-	this.err = nil
-	this.sql = ""
-	this.args = this.args[:0]
-	return this
+func (b *InsertBuilder) reset() *InsertBuilder {
+	b.table = ""
+	b.columns = b.columns[:0]
+	b.values = make([][]interface{}, 0, 0)
+	b.err = nil
+	b.sql = ""
+	b.args = b.args[:0]
+	return b
 }
 
-// 插入列
-func (this *insertBuilder) Columns(columns ...string) *insertBuilder {
+// Columns 插入列
+func (b *InsertBuilder) Columns(columns ...string) *InsertBuilder {
 	// 支持重复构造
-	this.columns = append(this.columns, columns...)
-	return this
+	b.columns = append(b.columns, columns...)
+	return b
 }
 
-// 值
-func (this *insertBuilder) Values(values ...interface{}) *insertBuilder {
-	// 支持多条插入
-	//	mutex.Lock()
-	//	defer mutex.Unlock()
-	//	if len(this.columns) != len(values) && len(this.columns) > 0 {
-	//		this.err = errors.New(fmt.Sprintf("values %v 的长度 %d 不匹配 columns 的长度 %d",
-	//			values, len(values), len(this.columns)))
-	//	}
-	this.values = append(this.values, values)
-	return this
+// Values 值
+func (b *InsertBuilder) Values(values ...interface{}) *InsertBuilder {
+	b.values = append(b.values, values)
+	return b
 }
 
 // tosql
-func (this *insertBuilder) tosql() (string, []interface{}) {
+func (b *InsertBuilder) tosql() (string, []interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
 	buf.WriteString("INSERT INTO ")
-	buf.WriteString(this.table)
+	buf.WriteString(b.table)
 	buf.WriteString(" (")
 
-	for i, col := range this.columns {
+	for i, col := range b.columns {
 		if i > 0 {
 			buf.WriteString(" ,")
 		}
 		buf.WriteString(col)
 	}
-
 	buf.WriteString(") VALUES")
-
 	var args []interface{}
-	for i, value := range this.values {
+	for i, value := range b.values {
 		if i > 0 {
 			buf.WriteRune(',')
 		}
@@ -85,53 +74,28 @@ func (this *insertBuilder) tosql() (string, []interface{}) {
 		}
 		buf.WriteString(")")
 	}
-	this.sql = buf.String()
-	this.args = args
-	return this.sql, this.args
+	b.sql = buf.String()
+	b.args = args
+	return b.sql, b.args
 }
 
-// tosql
-func (this *insertBuilder) ToSQL() (string, []interface{}) {
-	if len(this.sql) > 0 {
-		return this.sql, this.args
+// ToSQL tosql
+func (b *InsertBuilder) ToSQL() (string, []interface{}) {
+	if len(b.sql) > 0 {
+		return b.sql, b.args
 	}
-	return this.tosql()
+	return b.tosql()
 }
 
-// 执行
-func (this *insertBuilder) Exec() *medb.Result {
-	if len(this.sql) == 0 {
-		this.tosql()
+// Exec 执行
+func (b *InsertBuilder) Exec() *medb.Result {
+	var res = new(medb.Result)
+	if len(b.sql) == 0 {
+		b.tosql()
 	}
-	if this.err != nil {
-		var res = &medb.Result{
-			Err: this.err,
-		}
+	if b.err != nil {
+		res.SetErr(b.err)
 		return res
 	}
-	return connections[this.connname].db.Exec(this.sql, this.args...)
-}
-
-// 解析到结构体，数组。。。
-func (this *insertBuilder) QueryTo(models interface{}) (int, error) {
-	//	if len(this.sql) == 0 {
-	//		this.tosql()
-	//	}
-	//	if this.err != nil {
-	//		return 0, this.err
-	//	}
-	//	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
-	return 0, errors.New("[meorm]:Insert 不能使用该方法")
-}
-
-// 把查询组成sql并解析
-func (this *insertBuilder) QueryNext(dest ...interface{}) error {
-	//	if len(this.sql) == 0 {
-	//		this.tosql()
-	//	}
-	//	if this.err != nil {
-	//		return this.err
-	//	}
-	//	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
-	return errors.New("[meorm]:Insert 不能使用该方法")
+	return connections[b.connname].Exec(b.sql, b.args...)
 }

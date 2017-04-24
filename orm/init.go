@@ -14,40 +14,33 @@ var (
 	mutex       = new(sync.Mutex)
 )
 
-// 直接移植已有数据连接
-func MountConnection(basedb *sql.DB) *Conn {
+// MountConnection 直接移植已有数据连接
+func MountConnection(basedb *sql.DB, name string) *Conn {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var medb = new(medb.DB)
-	var err = medb.MountDB(basedb)
-	var name = medb.Name()
+	var err = medb.MountDB(basedb, name)
 	if err != nil {
-		meLog.Debug(err)
+		panic(err)
 	}
 	var conn = &Conn{
-		db:   medb,
+		DB:   medb,
 		name: name,
 	}
 	connections[name] = conn
 	return connections[name]
 }
 
-// 新建连接
-func NewConnection(driverName, dataSource string, connname ...string) *Conn {
+// NewConnection 新建连接
+func NewConnection(driverName, dataSource string, name string) *Conn {
 	mutex.Lock()
 	defer mutex.Unlock()
-	var name string
-	if len(connname) == 0 {
-		name = medb.RandomName()
-	} else {
-		name = connname[0]
-	}
 	var err = medb.RegisterDB(name, driverName, dataSource)
 	if err != nil {
 		panic(err)
 	}
 	var conn = &Conn{
-		db:   medb.OpenDB(name),
+		DB:   medb.OpenDB(name),
 		name: name,
 	}
 	connections[name] = conn

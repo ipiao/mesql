@@ -14,3 +14,9 @@ type Result struct {
 func (r *Result) Err() error {
 	return r.err
 }
+
+// SetErr 错误设置
+func (r *Result) SetErr(err error) *Result {
+	r.err = err
+	return r
+}

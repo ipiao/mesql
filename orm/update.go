@@ -6,8 +6,8 @@ import (
 	"github.com/ipiao/mesql/medb"
 )
 
-// 更新构造器
-type updateBuilder struct {
+// UpdateBuilder 更新构造器
+type UpdateBuilder struct {
 	Executor
 	connname   string
 	table      string
@@ -28,62 +28,62 @@ type setClause struct {
 }
 
 // reset
-func (this *updateBuilder) reset() *updateBuilder {
-	this.table = ""
-	this.setClause = make([]*setClause, 0, 0)
-	this.where = new(Where)
-	this.orderbys = this.orderbys[:0]
-	this.limit = 0
-	this.limitvalid = false
-	this.err = nil
-	this.sql = ""
-	this.args = this.args[:0]
-	return this
+func (u *UpdateBuilder) reset() *UpdateBuilder {
+	u.table = ""
+	u.setClause = make([]*setClause, 0, 0)
+	u.where = new(Where)
+	u.orderbys = u.orderbys[:0]
+	u.limit = 0
+	u.limitvalid = false
+	u.err = nil
+	u.sql = ""
+	u.args = u.args[:0]
+	return u
 }
 
-// 设置值
-func (this *updateBuilder) Set(column string, value interface{}) *updateBuilder {
-	this.setClause = append(this.setClause, &setClause{
+// Set 设置值
+func (u *UpdateBuilder) Set(column string, value interface{}) *UpdateBuilder {
+	u.setClause = append(u.setClause, &setClause{
 		column: column,
 		value:  value,
 	})
-	return this
+	return u
 }
 
-// where 条件
-func (this *updateBuilder) Where(condition string, args ...interface{}) *updateBuilder {
-	this.where.where = append(this.where.where, &whereConstraint{
+// Where where 条件
+func (u *UpdateBuilder) Where(condition string, args ...interface{}) *UpdateBuilder {
+	u.where.where = append(u.where.where, &whereConstraint{
 		condition: condition,
 		values:    args,
 	})
-	return this
+	return u
 }
 
 // WhereIn 条件
-func (this *updateBuilder) WhereIn(col string, args ...interface{}) *updateBuilder {
-	this.where.wherein(col, args...)
-	return this
+func (u *UpdateBuilder) WhereIn(col string, args ...interface{}) *UpdateBuilder {
+	u.where.wherein(col, args...)
+	return u
 }
 
-// orderby 条件
-func (this *updateBuilder) OrderBy(order string) *updateBuilder {
-	this.orderbys = append(this.orderbys, order)
-	return this
+// OrderBy orderby 条件
+func (u *UpdateBuilder) OrderBy(order string) *UpdateBuilder {
+	u.orderbys = append(u.orderbys, order)
+	return u
 }
 
-// limit
-func (this *updateBuilder) Limit(limit int64) *updateBuilder {
-	this.limitvalid = true
-	this.limit = limit
-	return this
+// Limit limit
+func (u *UpdateBuilder) Limit(limit int64) *UpdateBuilder {
+	u.limitvalid = true
+	u.limit = limit
+	return u
 }
 
 // 生成sql
-func (this *updateBuilder) tosql() (string, []interface{}) {
+func (u *UpdateBuilder) tosql() (string, []interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	if this.where.err != nil {
-		this.err = this.where.err
+	if u.where.err != nil {
+		u.err = u.where.err
 		return "", nil
 	}
 	buf := bufPool.Get()
@@ -91,9 +91,9 @@ func (this *updateBuilder) tosql() (string, []interface{}) {
 
 	var args []interface{}
 	buf.WriteString("UPDATE ")
-	buf.WriteString(this.table)
+	buf.WriteString(u.table)
 	buf.WriteString(" SET ")
-	for i, s := range this.setClause {
+	for i, s := range u.setClause {
 		if i > 0 {
 			buf.WriteString(", ")
 		}
@@ -101,9 +101,9 @@ func (this *updateBuilder) tosql() (string, []interface{}) {
 		args = append(args, s.value)
 	}
 
-	if len(this.where.where) > 0 {
+	if len(u.where.where) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range this.where.where {
+		for i, cond := range u.where.where {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
@@ -117,67 +117,65 @@ func (this *updateBuilder) tosql() (string, []interface{}) {
 		}
 	}
 
-	if len(this.orderbys) > 0 {
+	if len(u.orderbys) > 0 {
 		buf.WriteString(" ORDER BY ")
-		for i, s := range this.orderbys {
+		for i, s := range u.orderbys {
 			if i > 0 {
 				buf.WriteString(", ")
 			}
 			buf.WriteString(s)
 		}
 	}
-	if this.limitvalid {
+	if u.limitvalid {
 		buf.WriteString(" LIMIT ?")
-		args = append(args, this.limit)
+		args = append(args, u.limit)
 	}
 
-	this.sql = buf.String()
-	this.args = args
-	return this.sql, this.args
+	u.sql = buf.String()
+	u.args = args
+	return u.sql, u.args
 }
 
-// tosql
-func (this *updateBuilder) ToSQL() (string, []interface{}) {
-	if len(this.sql) > 0 {
-		return this.sql, this.args
+// ToSQL tosql
+func (u *UpdateBuilder) ToSQL() (string, []interface{}) {
+	if len(u.sql) > 0 {
+		return u.sql, u.args
 	}
-	return this.tosql()
+	return u.tosql()
 }
 
-// 执行
-func (this *updateBuilder) Exec() *medb.Result {
-	if len(this.sql) == 0 {
-		this.tosql()
+// Exec 执行
+func (u *UpdateBuilder) Exec() *medb.Result {
+	if len(u.sql) == 0 {
+		u.tosql()
 	}
-	if this.err != nil {
-		var res = &medb.Result{
-			Err: this.err,
-		}
+	if u.err != nil {
+		var res = new(medb.Result).SetErr(u.err)
 		return res
 	}
-	return connections[this.connname].db.Exec(this.sql, this.args...)
+	return connections[u.connname].Exec(u.sql, u.args...)
 }
 
 // 解析到结构体，数组。。。
-func (this *updateBuilder) QueryTo(models interface{}) (int, error) {
-	//	if len(this.sql) == 0 {
-	//		this.tosql()
+func (u *UpdateBuilder) QueryTo(models interface{}) (int, error) {
+	//	if len(u.sql) == 0 {
+	//		u.tosql()
 	//	}
-	//	if this.err != nil {
-	//		return 0, this.err
+	//	if u.err != nil {
+	//		return 0, u.err
 	//	}
-	//	return connections[this.connname].db.Query(this.sql, this.args...).ScanTo(models)
+	//	return connections[u.connname].db.Query(u.sql, u.args...).ScanTo(models)
 	return 0, errors.New("[meorm]:Update 不能使用该方法")
 }
 
 // 把查询组成sql并解析
-func (this *updateBuilder) QueryNext(dest ...interface{}) error {
-	//	if len(this.sql) == 0 {
-	//		this.tosql()
+func (u *UpdateBuilder) QueryNext(dest ...interface{}) error {
+	//	if len(u.sql) == 0 {
+	//		u.tosql()
 	//	}
-	//	if this.err != nil {
-	//		return this.err
+	//	if u.err != nil {
+	//		return u.err
 	//	}
-	//	return connections[this.connname].db.Query(this.sql, this.args...).ScanNext(dest...)
+	//	return connections[u.connname].db.Query(u.sql, u.args...).ScanNext(dest...)
 	return errors.New("[meorm]:Update 不能使用该方法")
 }

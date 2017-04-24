@@ -9,16 +9,16 @@ import (
 	"github.com/ipiao/mesql/medb"
 )
 
-// 插入结构体或结构体数组
-func (this *Conn) InsertModels(models interface{}) *medb.Result {
+// InsertModels 插入结构体或结构体数组
+func (c *Conn) InsertModels(models interface{}) *medb.Result {
 
 	var value = reflect.Indirect(reflect.ValueOf(models))
 	var k = value.Kind()
 	switch k {
 	case reflect.Struct:
-		return this.insertStruct(&value)
+		return c.insertStruct(&value)
 	case reflect.Slice, reflect.Array:
-		return this.insertSlice(&value)
+		return c.insertSlice(&value)
 	default:
 		panic(fmt.Sprintf("Error kind %s", k.String()))
 	}
@@ -26,7 +26,7 @@ func (this *Conn) InsertModels(models interface{}) *medb.Result {
 
 // 插入结构体
 // mysql 的主键遇 0 值可以自动忽略
-func (this *Conn) insertStruct(v *reflect.Value) *medb.Result {
+func (c *Conn) insertStruct(v *reflect.Value) *medb.Result {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -35,9 +35,9 @@ func (this *Conn) insertStruct(v *reflect.Value) *medb.Result {
 	var values = GetValues(*v)
 
 	if tbName == "" || len(cols) == 0 {
-		return &medb.Result{
-			Err: errors.New("Error struct"),
-		}
+		var res = new(medb.Result)
+		res.SetErr(errors.New("Error struct"))
+		return res
 	}
 
 	buf.WriteString("INSERT INTO ")
@@ -57,11 +57,11 @@ func (this *Conn) insertStruct(v *reflect.Value) *medb.Result {
 	valueStr += ")"
 	buf.WriteString(valueStr)
 	var args = values[0]
-	return this.db.Exec(buf.String(), args...)
+	return c.Exec(buf.String(), args...)
 }
 
 // 插入数组
-func (this *Conn) insertSlice(v *reflect.Value) *medb.Result {
+func (c *Conn) insertSlice(v *reflect.Value) *medb.Result {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -70,9 +70,9 @@ func (this *Conn) insertSlice(v *reflect.Value) *medb.Result {
 	var values = GetValues(*v)
 
 	if tbName == "" || len(cols) == 0 {
-		return &medb.Result{
-			Err: errors.New("Error slice"),
-		}
+		var res = new(medb.Result)
+		res.SetErr(errors.New("Error slice"))
+		return res
 	}
 
 	buf.WriteString("INSERT INTO ")
@@ -97,5 +97,5 @@ func (this *Conn) insertSlice(v *reflect.Value) *medb.Result {
 	for i := range values {
 		args = append(args, values[i]...)
 	}
-	return this.db.Exec(buf.String(), args...)
+	return c.Exec(buf.String(), args...)
 }
