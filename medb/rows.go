@@ -15,7 +15,7 @@ type Rows struct {
 
 // Row 单行
 type Row struct {
-	row *sql.Row
+	*sql.Row
 }
 
 // Err 返回错误信息
