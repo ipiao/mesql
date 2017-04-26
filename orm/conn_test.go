@@ -17,6 +17,10 @@ type User struct {
 	Status   int
 }
 
+func (User) TableName() string {
+	return "consignor_user"
+}
+
 func TestConn(t *testing.T) {
 	var datasource = "ipiao:1001@tcp(192.168.1.201:3306)/web_from_pg?charset=utf8mb4&loc=Asia%2fShanghai"
 	var Conn = NewConnection("mysql", datasource, "web_from_pg")
@@ -29,5 +33,9 @@ func TestConn(t *testing.T) {
 	t.Log(users, n, err)
 	//time.Sleep(1)
 	t.Log(count4)
-
+	var u = User{
+		Name: "从结构体插入",
+	}
+	err5 := Conn.InsertModels(&u).Err()
+	t.Log(err5 == nil, err5)
 }
