@@ -14,6 +14,10 @@ var (
 	maxLifeTime    = time.Minute * 30
 )
 
+const (
+	colParseTag = "db"
+)
+
 // RegisterDB 注册数据库连接
 //name:给数据库连接的命名
 //driverName:驱动名

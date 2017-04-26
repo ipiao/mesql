@@ -1,8 +1,6 @@
 package meorm
 
 import (
-	"errors"
-
 	"github.com/ipiao/mesql/medb"
 )
 
@@ -154,28 +152,4 @@ func (u *UpdateBuilder) Exec() *medb.Result {
 		return res
 	}
 	return connections[u.connname].Exec(u.sql, u.args...)
-}
-
-// 解析到结构体，数组。。。
-func (u *UpdateBuilder) QueryTo(models interface{}) (int, error) {
-	//	if len(u.sql) == 0 {
-	//		u.tosql()
-	//	}
-	//	if u.err != nil {
-	//		return 0, u.err
-	//	}
-	//	return connections[u.connname].db.Query(u.sql, u.args...).ScanTo(models)
-	return 0, errors.New("[meorm]:Update 不能使用该方法")
-}
-
-// 把查询组成sql并解析
-func (u *UpdateBuilder) QueryNext(dest ...interface{}) error {
-	//	if len(u.sql) == 0 {
-	//		u.tosql()
-	//	}
-	//	if u.err != nil {
-	//		return u.err
-	//	}
-	//	return connections[u.connname].db.Query(u.sql, u.args...).ScanNext(dest...)
-	return errors.New("[meorm]:Update 不能使用该方法")
 }

@@ -3,14 +3,13 @@ package medb
 import (
 	"database/sql"
 	"reflect"
-	"time"
 )
 
 // Rows 数据行
 type Rows struct {
 	*sql.Rows
 	err     error
-	columns map[string]int
+	columns map[string]int // 对应数据库的列名和列序号
 }
 
 // Row 单行
@@ -34,7 +33,7 @@ func (r *Rows) ScanNext(dest ...interface{}) error {
 	return r.Close()
 }
 
-// parse
+// parse 将fields转换成相应的类型并绑定到value上
 func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error {
 	switch value.Kind() {
 	case reflect.Bool:
@@ -84,36 +83,12 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Struct:
 		{
-			if value.Type().String() == "time.Time" {
-				//时间结构体解析
-				var s = sql.NullString{}
-				var err = s.Scan(*(fields[index].(*interface{})))
+			if value.Type().String() == "time.Time" { //时间结构体解析
+				err := timeparse(&value, *(fields[index].(*interface{})))
 				if err != nil {
 					return err
 				}
-				if s.Valid {
-					t, err := time.ParseInLocation("2006-01-02 15:04:05", s.String, time.Local)
-					if err != nil {
-						t, err = time.ParseInLocation("2006-01-02", s.String, time.Local)
-					}
-					if err == nil {
-						value.Set(reflect.ValueOf(t))
-					}
-				} else {
-					var i = sql.NullInt64{}
-					var err = i.Scan(*(fields[index].(*interface{})))
-					if err != nil {
-						return err
-					}
-					if i.Valid {
-						t := time.Unix(i.Int64, 0)
-						if err == nil {
-							value.Set(reflect.ValueOf(t))
-						}
-					}
-				}
-			} else {
-				//常规结构体解析
+			} else { //常规结构体解析
 				for i := 0; i < value.NumField(); i++ {
 					var fieldValue = value.Field(i)
 					var fieldType = value.Type().Field(i)
@@ -123,7 +98,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 					} else {
 						//非匿名字段
 						if fieldValue.CanSet() {
-							var fieldName = fieldType.Tag.Get("db")
+							var fieldName = fieldType.Tag.Get(colParseTag)
 							if fieldName == "_" {
 								continue
 							}
@@ -170,12 +145,11 @@ func (r *Rows) scan(v reflect.Value) error {
 // ScanTo 解析
 func (r *Rows) ScanTo(data interface{}) (int, error) {
 	if r.err == nil {
-		var d, err = newData(data)
-		//	类型解析
+		var d, err = newData(data) //	类型解析
 		if err != nil {
 			return 0, err
 		}
-		//	行解析
+		//	行解析，逐行解析rows的数据
 		for r.Next() && d.next() {
 			var v = d.newValue()
 			err = r.scan(v)
@@ -200,6 +174,9 @@ type data struct {
 }
 
 // newData 生成一个data的描述
+//t,v value的反射类型和反射值,如果是指针型则返回指向的类型、值
+//slice 是否是切片类型
+//destType 如果是切片类型，则指向切片元素所对应的类型
 func newData(value interface{}) (*data, error) {
 	var d = new(data)
 	d.t = reflect.TypeOf(value)
@@ -210,19 +187,15 @@ func newData(value interface{}) (*data, error) {
 	}
 	switch d.t.Kind() {
 	case reflect.Slice:
-		{
-			d.slice = true
-			d.destType = d.t.Elem()
-		}
+		d.slice = true
+		d.destType = d.t.Elem()
 	default:
-		{
-			d.destType = d.t
-		}
+		d.destType = d.t
 	}
 	return d, nil
 }
 
-// newValue 获取一个可Set的值
+// newValue 获取一个要生成的目标值的反射类型
 func (r *data) newValue() reflect.Value {
 	r.length++
 	if r.slice {

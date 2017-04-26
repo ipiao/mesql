@@ -11,6 +11,11 @@ import (
 )
 
 func TestMeDB(t *testing.T) {
+	type User struct {
+		ID         int64 `db:"id"`
+		CreateTime time.Time
+	}
+	var users []User
 	var datasource = "ipiao:1001@tcp(192.168.1.201:3306)/web_from_pg?charset=utf8mb4&loc=Asia%2fShanghai"
 	err := RegisterDB("web_from_pg", "mysql", datasource)
 	if err != nil {
@@ -19,11 +24,9 @@ func TestMeDB(t *testing.T) {
 	db := OpenDB("web_from_pg")
 	err = db.Ping()
 	t.Log(err == nil)
-	for i := 0; i < 10; i++ {
-		//rows := db.Prepare("select * from consignor_user").Query()
-		rows := db.Query("select * from consignor_user")
-		defer rows.Close()
-	}
+	_, err = db.Query("select * from consignor_user").ScanTo(&users)
+	t.Log(err == nil)
+	t.Log(users)
 }
 
 func BenchmarkMeDB(b *testing.B) {
