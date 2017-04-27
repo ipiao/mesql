@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/ipiao/mesql/medb"
 )
 
 var reg = regexp.MustCompile(`\B[A-Z]`)
@@ -61,19 +63,19 @@ func GetColumns(v reflect.Value) []string {
 			if f.Anonymous {
 				columns = append(columns, GetColumns(v.Field(i))...)
 			} else {
-				var colName = f.Tag.Get(ormTag)
+				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
+				var colName = tagMap[ormFieldTag]
 				if colName == "" {
 					colName = transFieldName(f.Name)
 				}
 				if colName == "_" {
 					continue
 				}
-
 				columns = append(columns, colName)
 			}
 		}
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-		return GetColumns(v.Index(0))
+		return GetColumns(reflect.Indirect(v.Index(0)))
 	} else {
 		panic(fmt.Sprintf("Error kind %s", v.Kind().String()))
 	}
@@ -90,8 +92,9 @@ func GetValues(v reflect.Value) [][]interface{} {
 			if f.Anonymous {
 				values[0] = append(values[0], GetValues(v.Field(i))[0]...)
 			} else {
-				var ormtag = f.Tag.Get(ormTag)
-				if ormtag == "_" {
+				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
+				var colName = tagMap[ormFieldTag]
+				if colName == "_" {
 					continue
 				}
 				values[0] = append(values[0], v.Field(i).Interface())
@@ -101,7 +104,7 @@ func GetValues(v reflect.Value) [][]interface{} {
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
 		var values = make([][]interface{}, 0)
 		for i := 0; i < v.Len(); i++ {
-			values = append(values, GetValues(v.Index(i))...)
+			values = append(values, GetValues(reflect.Indirect(v.Index(i)))...)
 		}
 		return values
 	} else {

@@ -1,6 +1,11 @@
 package meorm
 
 import (
+	"errors"
+	"reflect"
+
+	"fmt"
+
 	"github.com/ipiao/mesql/medb"
 )
 
@@ -37,6 +42,53 @@ func (b *InsertBuilder) Columns(columns ...string) *InsertBuilder {
 // Values 值
 func (b *InsertBuilder) Values(values ...interface{}) *InsertBuilder {
 	b.values = append(b.values, values)
+	return b
+}
+
+// Models 插入结构体
+// models必须为结构体、结构体数组，或者相应的指针
+func (b *InsertBuilder) Models(models interface{}) *InsertBuilder {
+	var t = reflect.TypeOf(models)
+	var v = reflect.ValueOf(models)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		v = v.Elem()
+	}
+	var cols = GetColumns(v)
+	var vals = GetValues(v)
+	if len(b.columns) == 0 || len(cols) == 0 {
+		b.err = errors.New("columns can not be null")
+		return b
+	}
+	//
+	if len(b.columns) == 1 {
+		if b.columns[0] == "*" {
+			b.columns = cols
+		}
+	}
+	// 获取列名和结构体字段列的映射
+	var tempMap = make(map[int]int, len(b.columns))
+	for i, column := range b.columns {
+		flag := 0
+		for j, col := range cols {
+			if column == col {
+				tempMap[i] = j
+				flag++
+				break
+			}
+		}
+		if flag == 0 {
+			b.err = fmt.Errorf("can not find column %s in models", column)
+		}
+	}
+	// 拼接值
+	for _, val := range vals {
+		var value = make([]interface{}, len(b.columns))
+		for i, v := range tempMap {
+			value[i] = val[v]
+		}
+		b.values = append(b.values, value)
+	}
 	return b
 }
 

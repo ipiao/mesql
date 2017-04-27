@@ -15,7 +15,8 @@ var (
 )
 
 const (
-	ormTag = "db"
+	ormTag      = "db"
+	ormFieldTag = "col"
 )
 
 // MountConnection 直接移植已有数据连接
