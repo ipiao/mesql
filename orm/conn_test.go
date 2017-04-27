@@ -33,13 +33,17 @@ func TestConn(t *testing.T) {
 	t.Log(users, n, err)
 	//time.Sleep(1)
 	t.Log(count4)
-	var u = User{
-		Name:   "从结构体插入011",
-		Mobile: "13777462204",
-	}
-	var us = []*User{&u}
-	builder := Conn.InsertModels(&us).Columns("phone", "name")
-	err5 := builder.Exec().Err()
-	t.Log(err5 == nil, err5)
-	t.Log(builder.ToSQL())
+	// var u = User{
+	// 	Name:   "从结构体插入011",
+	// 	Mobile: "13777462204",
+	// }
+	// var us = []*User{&u}
+	// builder := Conn.InsertInto("consignor_user").Columns("phone", "name").Models(us)
+	// err5 := builder.Exec().Err()
+	// t.Log(err5 == nil, err5)
+	// t.Log(builder.ToSQL())
+	builder2 := Conn.Update("consignor_user").Set("name", "hahahha").Where("id=?", 176)
+	err6 := builder2.Exec().Err()
+	t.Log(err6 == nil, err6)
+	t.Log(builder2.ToSQL())
 }

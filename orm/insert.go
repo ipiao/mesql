@@ -11,7 +11,6 @@ import (
 
 // InsertBuilder insert构造器
 type InsertBuilder struct {
-	Executor
 	connname string
 	table    string
 	columns  []string

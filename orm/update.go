@@ -6,10 +6,11 @@ import (
 
 // UpdateBuilder 更新构造器
 type UpdateBuilder struct {
-	Executor
+	// setClause  []*setClause
 	connname   string
 	table      string
-	setClause  []*setClause
+	columns    []string
+	values     []interface{}
 	where      *Where
 	orderbys   []string
 	limit      int64
@@ -28,7 +29,9 @@ type setClause struct {
 // reset
 func (u *UpdateBuilder) reset() *UpdateBuilder {
 	u.table = ""
-	u.setClause = make([]*setClause, 0, 0)
+	u.columns = u.columns[:0]
+	u.values = u.values[:0]
+	//u.setClause = make([]*setClause, 0, 0)
 	u.where = new(Where)
 	u.orderbys = u.orderbys[:0]
 	u.limit = 0
@@ -41,10 +44,8 @@ func (u *UpdateBuilder) reset() *UpdateBuilder {
 
 // Set 设置值
 func (u *UpdateBuilder) Set(column string, value interface{}) *UpdateBuilder {
-	u.setClause = append(u.setClause, &setClause{
-		column: column,
-		value:  value,
-	})
+	u.columns = append(u.columns, column+"=?")
+	u.values = append(u.values, value)
 	return u
 }
 
@@ -91,13 +92,13 @@ func (u *UpdateBuilder) tosql() (string, []interface{}) {
 	buf.WriteString("UPDATE ")
 	buf.WriteString(u.table)
 	buf.WriteString(" SET ")
-	for i, s := range u.setClause {
+	for i, s := range u.columns {
 		if i > 0 {
 			buf.WriteString(", ")
 		}
-		buf.WriteString(s.column + " = ?")
-		args = append(args, s.value)
+		buf.WriteString(s)
 	}
+	args = append(args, u.values...)
 
 	if len(u.where.where) > 0 {
 		buf.WriteString(" WHERE ")

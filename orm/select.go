@@ -10,7 +10,6 @@ import (
 
 // SelectBuilder 查询
 type SelectBuilder struct {
-	Executor
 	connname string
 	distinct bool
 	columns  []string

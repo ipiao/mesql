@@ -6,7 +6,6 @@ import (
 
 // DeleteBuilder 删除
 type DeleteBuilder struct {
-	Executor
 	connname   string
 	sql        string
 	args       []interface{}

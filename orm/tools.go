@@ -64,7 +64,7 @@ func GetColumns(v reflect.Value) []string {
 				columns = append(columns, GetColumns(v.Field(i))...)
 			} else {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
-				var colName = tagMap[ormFieldTag]
+				var colName = tagMap[ormFieldSelectTag]
 				if colName == "" {
 					colName = transFieldName(f.Name)
 				}
@@ -93,7 +93,7 @@ func GetValues(v reflect.Value) [][]interface{} {
 				values[0] = append(values[0], GetValues(v.Field(i))[0]...)
 			} else {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
-				var colName = tagMap[ormFieldTag]
+				var colName = tagMap[ormFieldSelectTag]
 				if colName == "_" {
 					continue
 				}
