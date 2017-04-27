@@ -2,31 +2,30 @@ package meorm
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/ipiao/mesql/medb"
 )
 
-// InsertModels 插入结构体或结构体数组
-func (c *Conn) InsertModels(models interface{}) *medb.Result {
-	var r = new(medb.Result)
-	var value = reflect.Indirect(reflect.ValueOf(models))
-	var k = value.Kind()
-	switch k {
-	case reflect.Struct:
-		return c.insertStruct(&value)
-	case reflect.Slice, reflect.Array:
-		if value.Type().Elem().Kind() == reflect.Struct {
-			return c.insertSlice(&value)
-		}
-		r.SetErr(fmt.Errorf("Error kind of models []%s", value.Type().Elem().Kind().String()))
-	default:
-		r.SetErr(fmt.Errorf("Error kind of models %s", k.String()))
-	}
-	return r
-}
+// // InsertModels 插入结构体或结构体数组
+// func (c *Conn) InsertModels(models interface{}) *medb.Result {
+// 	var r = new(medb.Result)
+// 	var value = reflect.Indirect(reflect.ValueOf(models))
+// 	var k = value.Kind()
+// 	switch k {
+// 	case reflect.Struct:
+// 		return c.insertStruct(&value)
+// 	case reflect.Slice, reflect.Array:
+// 		if value.Type().Elem().Kind() == reflect.Struct {
+// 			return c.insertSlice(&value)
+// 		}
+// 		r.SetErr(fmt.Errorf("Error kind of models []%s", value.Type().Elem().Kind().String()))
+// 	default:
+// 		r.SetErr(fmt.Errorf("Error kind of models %s", k.String()))
+// 	}
+// 	return r
+// }
 
 // 插入结构体
 // mysql 的主键遇 0 值可以自动忽略

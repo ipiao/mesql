@@ -38,7 +38,7 @@ func TestConn(t *testing.T) {
 		Mobile: "13777462204",
 	}
 	var us = []*User{&u}
-	builder := Conn.InsertInto("consignor_user").Columns("phone", "name").Models(&us)
+	builder := Conn.InsertModels(&us).Columns("phone", "name")
 	err5 := builder.Exec().Err()
 	t.Log(err5 == nil, err5)
 	t.Log(builder.ToSQL())

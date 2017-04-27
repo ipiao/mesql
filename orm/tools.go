@@ -46,7 +46,7 @@ func GetTableName(v reflect.Value) string {
 			tbName = transFieldName(v.Type().Name())
 		}
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-		return GetTableName(v.Index(0))
+		return GetTableName(reflect.Indirect(v.Index(0)))
 	} else {
 		panic(fmt.Sprintf("Error kind %s", v.Kind().String()))
 	}

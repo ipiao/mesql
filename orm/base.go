@@ -46,6 +46,15 @@ func (c *Conn) InsertInto(table string) *InsertBuilder {
 	return builder
 }
 
+// // InsertModels 生成插入构造器
+// // 表名有结构体方法 TableName 生成
+// func (c *Conn) InsertModels(models interface{}) *InsertBuilder {
+// 	// var builder = new(InsertBuilder).reset()
+// 	// builder.connname = c.name
+// 	// var table = GetTableName(reflect.Indirect(reflect.ValueOf(models)))
+// 	// return c.InsertInto(table).Models(models)
+// }
+
 // DeleteFrom 生成删除构造器
 func (c *Conn) DeleteFrom(table string) *DeleteBuilder {
 	var builder = new(DeleteBuilder).reset()
