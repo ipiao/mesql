@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -33,9 +34,15 @@ func (d *DB) MountDB(db *sql.DB, name string) error {
 func (d *DB) Exec(sql string, args ...interface{}) *Result {
 	if !d.autoCommit {
 		var res, err = d.Tx.Exec(sql, args...)
+		if err != nil {
+			log.Printf("[medb] tx sql exec error:sql='%s',args=%v", sql, args)
+		}
 		return &Result{res, err}
 	}
 	var res, err = d.DB.Exec(sql, args...)
+	if err != nil {
+		log.Printf("[medb] sql exec error:sql='%s',args=%v", sql, args)
+	}
 	return &Result{res, err}
 }
 
@@ -43,9 +50,15 @@ func (d *DB) Exec(sql string, args ...interface{}) *Result {
 func (d *DB) ExecContext(ctx context.Context, sql string, args ...interface{}) *Result {
 	if !d.autoCommit {
 		var res, err = d.Tx.ExecContext(ctx, sql, args...)
+		if err != nil {
+			log.Printf("[medb] tx sql exec context error:sql='%s',args=%v", sql, args)
+		}
 		return &Result{res, err}
 	}
 	var res, err = d.DB.ExecContext(ctx, sql, args...)
+	if err != nil {
+		log.Printf("[medb] sql exec context error:sql='%s',args=%v", sql, args)
+	}
 	return &Result{res, err}
 }
 
@@ -53,9 +66,15 @@ func (d *DB) ExecContext(ctx context.Context, sql string, args ...interface{}) *
 func (d *DB) Query(sql string, args ...interface{}) *Rows {
 	if !d.autoCommit {
 		var rows, err = d.Tx.Query(sql, args...)
+		if err != nil {
+			log.Printf("[medb] tx sql query error:sql='%s',args=%v", sql, args)
+		}
 		return &Rows{Rows: rows, err: err}
 	}
 	var rows, err = d.DB.Query(sql, args...)
+	if err != nil {
+		log.Printf("[medb] sql query error:sql='%s',args=%v", sql, args)
+	}
 	return &Rows{Rows: rows, err: err}
 }
 
@@ -63,9 +82,15 @@ func (d *DB) Query(sql string, args ...interface{}) *Rows {
 func (d *DB) QueryContext(ctx context.Context, sql string, args ...interface{}) *Rows {
 	if !d.autoCommit {
 		var rows, err = d.Tx.QueryContext(ctx, sql, args...)
+		if err != nil {
+			log.Printf("[medb] tx sql query context error:sql='%s',args=%v", sql, args)
+		}
 		return &Rows{Rows: rows, err: err}
 	}
 	var rows, err = d.DB.QueryContext(ctx, sql, args...)
+	if err != nil {
+		log.Printf("[medb] sql query context error:sql='%s',args=%v", sql, args)
+	}
 	return &Rows{Rows: rows, err: err}
 }
 

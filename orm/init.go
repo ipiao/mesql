@@ -14,6 +14,10 @@ var (
 	mutex       = new(sync.Mutex)
 )
 
+const (
+	ormTag = "db"
+)
+
 // MountConnection 直接移植已有数据连接
 func MountConnection(basedb *sql.DB, name string) *Conn {
 	mutex.Lock()

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"testing"
-
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -14,6 +13,7 @@ func TestMeDB(t *testing.T) {
 	type User struct {
 		ID         int64 `db:"id"`
 		CreateTime time.Time
+		Name       string `db:"user_name;insert:name,default:0"`
 	}
 	var users []User
 	var datasource = "ipiao:1001@tcp(192.168.1.201:3306)/web_from_pg?charset=utf8mb4&loc=Asia%2fShanghai"
@@ -24,7 +24,7 @@ func TestMeDB(t *testing.T) {
 	db := OpenDB("web_from_pg")
 	err = db.Ping()
 	t.Log(err == nil)
-	_, err = db.Query("select * from consignor_user").ScanTo(&users)
+	_, err = db.Query("select * from consignor_user where id =1").ScanTo(&users)
 	t.Log(err == nil)
 	t.Log(users)
 }

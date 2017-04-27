@@ -9,11 +9,11 @@ import (
 type User struct {
 	ID       int    `db:"id"`
 	Name     string `db:"name"`
-	Account  string `db:"account"`
-	Password string `db:"password"`
+	Account  string `db:"_"`
+	Password string `db:"pwd"`
 	Mobile   string `db:"phone"`
-	CreateBy int    `db:"create_by"`
-	UpdateBy int    `db:"update_by"`
+	CreateBy int    `db:"_"`
+	UpdateBy int    `db:"_"`
 	Status   int
 }
 
@@ -36,6 +36,6 @@ func TestConn(t *testing.T) {
 	var u = User{
 		Name: "从结构体插入",
 	}
-	err5 := Conn.InsertModels(&u).Err()
+	err5 := Conn.InsertModels(u).Err()
 	t.Log(err5 == nil, err5)
 }

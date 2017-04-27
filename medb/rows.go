@@ -98,7 +98,8 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 					} else {
 						//非匿名字段
 						if fieldValue.CanSet() {
-							var fieldName = fieldType.Tag.Get(colParseTag)
+							var tagMap = ParseTag(fieldType.Tag.Get(MedbTag))
+							var fieldName = tagMap[MedbFieldName]
 							if fieldName == "_" {
 								continue
 							}

@@ -61,14 +61,14 @@ func GetColumns(v reflect.Value) []string {
 			if f.Anonymous {
 				columns = append(columns, GetColumns(v.Field(i))...)
 			} else {
-				var colName = f.Tag.Get("db")
-				if colName == "" || colName == "_" {
+				var colName = f.Tag.Get(ormTag)
+				if colName == "" {
 					colName = transFieldName(f.Name)
 				}
-				var ormtag = f.Tag.Get("meorm")
-				if ormtag == "_" {
+				if colName == "_" {
 					continue
 				}
+
 				columns = append(columns, colName)
 			}
 		}
@@ -90,7 +90,7 @@ func GetValues(v reflect.Value) [][]interface{} {
 			if f.Anonymous {
 				values[0] = append(values[0], GetValues(v.Field(i))[0]...)
 			} else {
-				var ormtag = f.Tag.Get("meorm")
+				var ormtag = f.Tag.Get(ormTag)
 				if ormtag == "_" {
 					continue
 				}

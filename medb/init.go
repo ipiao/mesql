@@ -14,8 +14,10 @@ var (
 	maxLifeTime    = time.Minute * 30
 )
 
+// 标签
 const (
-	colParseTag = "db"
+	MedbTag       = "db"
+	MedbFieldName = "col"
 )
 
 // RegisterDB 注册数据库连接
