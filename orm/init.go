@@ -17,10 +17,11 @@ var (
 const (
 	ormTag            = "db"
 	ormFieldSelectTag = medb.MedbFieldName
+	mysqlPlaceHolder  = "?"
 )
 
 // MountConnection 直接移植已有数据连接
-func MountConnection(basedb *sql.DB, name string) *Conn {
+func MountConnection(driverName string, name string, basedb *sql.DB) *Conn {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var medb = new(medb.DB)

@@ -6,7 +6,8 @@ import (
 
 // Conn 连接
 type Conn struct {
-	name string
+	dialect Dialect
+	name    string
 	*medb.DB
 }
 
