@@ -40,6 +40,14 @@ func (c *Conn) Update(table string) *UpdateBuilder {
 	return builder
 }
 
+// InsertOrUpdate 生成插入或更新构造器
+func (c *Conn) InsertOrUpdate(table string) *InsupBuilder {
+	var builder = new(InsupBuilder).reset()
+	builder.connname = c.name
+	builder.table = table
+	return builder
+}
+
 // InsertInto 生成插入构造器
 func (c *Conn) InsertInto(table string) *InsertBuilder {
 	var builder = new(InsertBuilder).reset()
@@ -48,14 +56,14 @@ func (c *Conn) InsertInto(table string) *InsertBuilder {
 	return builder
 }
 
-// // InsertModels 生成插入构造器
-// // 表名有结构体方法 TableName 生成
-// func (c *Conn) InsertModels(models interface{}) *InsertBuilder {
-// 	var table = GetTableName(reflect.Indirect(reflect.ValueOf(models)))
-// 	var builder = c.InsertInto(table).Models(models)
-// 	builder.connname = c.name
-// 	return builder
-// }
+// ReplaceInto 生成插入构造器
+func (c *Conn) ReplaceInto(table string) *InsertBuilder {
+	var builder = new(InsertBuilder).reset()
+	builder.connname = c.name
+	builder.table = table
+	builder.replace = true
+	return builder
+}
 
 // DeleteFrom 生成删除构造器
 func (c *Conn) DeleteFrom(table string) *DeleteBuilder {

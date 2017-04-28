@@ -5,6 +5,7 @@ import (
 )
 
 // UpdateBuilder 更新构造器
+// 只支持单个更新
 type UpdateBuilder struct {
 	// setClause  []*setClause
 	connname   string
@@ -49,6 +50,13 @@ func (u *UpdateBuilder) Set(column string, value interface{}) *UpdateBuilder {
 	return u
 }
 
+// SetS 设置值
+func (u *UpdateBuilder) SetS(column string, values ...interface{}) *UpdateBuilder {
+	u.columns = append(u.columns, column)
+	u.values = append(u.values, values...)
+	return u
+}
+
 // Where where 条件
 func (u *UpdateBuilder) Where(condition string, args ...interface{}) *UpdateBuilder {
 	u.where.where = append(u.where.where, &whereConstraint{
@@ -79,8 +87,8 @@ func (u *UpdateBuilder) Limit(limit int64) *UpdateBuilder {
 
 // 生成sql
 func (u *UpdateBuilder) tosql() (string, []interface{}) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	// mutex.Lock()
+	// defer mutex.Unlock()
 	if u.where.err != nil {
 		u.err = u.where.err
 		return "", nil

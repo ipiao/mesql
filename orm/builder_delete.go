@@ -59,8 +59,8 @@ func (d *DeleteBuilder) Limit(limit int64) *DeleteBuilder {
 
 // 生成sql
 func (d *DeleteBuilder) tosql() (string, []interface{}) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	// mutex.Lock()
+	// defer mutex.Unlock()
 	if d.where.err != nil {
 		d.err = d.where.err
 		return "", nil

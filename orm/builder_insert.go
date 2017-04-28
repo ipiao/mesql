@@ -18,6 +18,8 @@ type InsertBuilder struct {
 	sql      string
 	args     []interface{}
 	err      error
+	ignore   bool // 不存在则插入，存在则无操作
+	replace  bool
 }
 
 // reset
@@ -28,6 +30,14 @@ func (b *InsertBuilder) reset() *InsertBuilder {
 	b.err = nil
 	b.sql = ""
 	b.args = b.args[:0]
+	b.replace = false
+	b.ignore = false
+	return b
+}
+
+// Ignore 值
+func (b *InsertBuilder) Ignore() *InsertBuilder {
+	b.ignore = true
 	return b
 }
 
@@ -93,12 +103,24 @@ func (b *InsertBuilder) Models(models interface{}) *InsertBuilder {
 
 // tosql
 func (b *InsertBuilder) tosql() (string, []interface{}) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	if b.replace && b.ignore {
+		b.err = errors.New("replace and ignore can not simultaneous exists")
+		return "", nil
+	}
+	// mutex.Lock()
+	// defer mutex.Unlock()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
-	buf.WriteString("INSERT INTO ")
+	if b.replace {
+		buf.WriteString("REPLACE ")
+	} else {
+		buf.WriteString("INSERT ")
+	}
+	if b.ignore {
+		buf.WriteString("IGNORE ")
+	}
+	buf.WriteString("INTO ")
 	buf.WriteString(b.table)
 	buf.WriteString(" (")
 

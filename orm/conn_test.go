@@ -36,14 +36,19 @@ func TestConn(t *testing.T) {
 	// var u = User{
 	// 	Name:   "从结构体插入011",
 	// 	Mobile: "13777462204",
+	// 	ID:     176,
 	// }
 	// var us = []*User{&u}
-	// builder := Conn.InsertInto("consignor_user").Columns("phone", "name").Models(us)
+	// builder := Conn.ReplaceInto("consignor_user").Columns("phone", "name", "id").Models(us)
 	// err5 := builder.Exec().Err()
 	// t.Log(err5 == nil, err5)
 	// t.Log(builder.ToSQL())
-	builder2 := Conn.Update("consignor_user").Set("name", "hahahha").Where("id=?", 176)
-	err6 := builder2.Exec().Err()
-	t.Log(err6 == nil, err6)
-	t.Log(builder2.ToSQL())
+	// builder2 := Conn.Update("consignor_user").SetS("name=?,consignor_code=?", "hahahhaa11", "001").Where("id=?", 176)
+	// err6 := builder2.Exec().Err()
+	// t.Log(err6 == nil, err6)
+	// t.Log(builder2.ToSQL())
+	builder3 := Conn.InsertOrUpdate("consignor_user").Columns("id", "name", "phone").Values(176, "namesasd", "154564").DupKeys("id").Values("aaa", "sawsas")
+	err7 := builder3.Exec().Err()
+	t.Log(err7 == nil, err7)
+	t.Log(builder3.ToSQL())
 }

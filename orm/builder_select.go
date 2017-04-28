@@ -119,8 +119,8 @@ func (s *SelectBuilder) ToSQL() (string, []interface{}) {
 
 // 把查询条件组成sql并放到查询体中
 func (s *SelectBuilder) tosql() (string, []interface{}) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	// mutex.Lock()
+	// defer mutex.Unlock()
 	if s.where.err != nil {
 		s.err = s.where.err
 		return "", nil
