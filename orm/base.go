@@ -73,3 +73,11 @@ func (c *Conn) DeleteFrom(table string) *DeleteBuilder {
 	builder.table = table
 	return builder
 }
+
+// Delete 生成删除构造器
+func (c *Conn) Delete(column string) *DeleteBuilder {
+	var builder = new(DeleteBuilder).reset()
+	builder.connname = c.name
+	builder.column = column
+	return builder
+}
