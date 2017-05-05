@@ -8,6 +8,7 @@ import (
 
 type deleteBuilder struct {
 	Executor
+	column     string
 	connname   string
 	sql        string
 	args       []interface{}
@@ -21,6 +22,7 @@ type deleteBuilder struct {
 
 // reset
 func (this *deleteBuilder) reset() *deleteBuilder {
+	this.column = ""
 	this.table = ""
 	this.where = new(Where)
 	this.orderbys = this.orderbys[:0]
@@ -29,6 +31,12 @@ func (this *deleteBuilder) reset() *deleteBuilder {
 	this.err = nil
 	this.sql = ""
 	this.args = this.args[:0]
+	return this
+}
+
+// where 条件
+func (this *deleteBuilder) From(table string) *deleteBuilder {
+	this.table = table
 	return this
 }
 
@@ -71,7 +79,9 @@ func (this *deleteBuilder) tosql() (string, []interface{}) {
 	defer bufPool.Put(buf)
 
 	var args []interface{}
-	buf.WriteString("DELETE FROM ")
+	buf.WriteString("DELETE ")
+	buf.WriteString(this.column)
+	buf.WriteString(" FROM ")
 	buf.WriteString(this.table)
 
 	if len(this.where.where) > 0 {
