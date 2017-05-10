@@ -137,13 +137,13 @@ func (this *DB) Prepare(sql string) *Stmt {
 // 开启事务
 func (this *DB) Begin() bool {
 	var err error
-	if this.autocommit {
-		this.tx, err = this.db.Begin()
-		if err != nil {
-			return false
-		}
-		this.autocommit = false
+	// if this.autocommit {
+	this.tx, err = this.db.Begin()
+	if err != nil {
+		return false
 	}
+	this.autocommit = false
+	// }
 	return true
 }
 
