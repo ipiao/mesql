@@ -6,7 +6,7 @@ import (
 
 // DeleteBuilder 删除
 type DeleteBuilder struct {
-	connname   string
+	*Conn
 	sql        string
 	column     string
 	args       []interface{}
@@ -135,5 +135,5 @@ func (d *DeleteBuilder) Exec() *medb.Result {
 		res.SetErr(d.err)
 		return res
 	}
-	return connections[d.connname].Exec(d.sql, d.args...)
+	return d.Conn.Exec(d.sql, d.args...)
 }

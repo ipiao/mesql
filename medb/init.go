@@ -21,9 +21,9 @@ const (
 )
 
 // RegisterDB 注册数据库连接
-//name:给数据库连接的命名
-//driverName:驱动名
-//dataSourceName：数据库连接信息
+// name:给数据库连接的命名
+// driverName:驱动名
+// dataSourceName：数据库连接信息
 func RegisterDB(name, driverName, dataSourceName string) error {
 	var mu = sync.Mutex{}
 	mu.Lock()
@@ -39,7 +39,7 @@ func RegisterDB(name, driverName, dataSourceName string) error {
 	db.SetMaxIdleConns(maxIdleConnNum)
 	db.SetConnMaxLifetime(maxLifeTime)
 
-	dbs[name] = &DB{DB: db, autoCommit: true, name: name}
+	dbs[name] = &DB{DB: db, name: name}
 	return db.Ping()
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ipiao/mesql/medb"
 	"github.com/ipiao/mesql/orm/common"
+	"github.com/ipiao/mesql/orm/dialect"
 )
 
 var (
@@ -17,11 +18,10 @@ var (
 const (
 	ormTag            = "db"
 	ormFieldSelectTag = medb.MedbFieldName
-	mysqlPlaceHolder  = "?"
 )
 
 // MountConnection 直接移植已有数据连接
-func MountConnection(driverName string, name string, basedb *sql.DB) *Conn {
+func MountConnection(name string, basedb *sql.DB, dialect dialect.Dialect) *Conn {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var medb = new(medb.DB)
@@ -30,8 +30,8 @@ func MountConnection(driverName string, name string, basedb *sql.DB) *Conn {
 		panic(err)
 	}
 	var conn = &Conn{
-		DB:   medb,
-		name: name,
+		DB:      medb,
+		dialect: dialect,
 	}
 	connections[name] = conn
 	return connections[name]
@@ -46,8 +46,8 @@ func NewConnection(driverName, dataSource string, name string) *Conn {
 		panic(err)
 	}
 	var conn = &Conn{
-		DB:   medb.OpenDB(name),
-		name: name,
+		DB:      medb.OpenDB(name),
+		dialect: dialect.ConvertDriverNameToDialect(driverName),
 	}
 	connections[name] = conn
 	return conn

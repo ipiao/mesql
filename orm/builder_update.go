@@ -7,7 +7,7 @@ import (
 // UpdateBuilder 更新构造器
 // 只支持单个更新
 type UpdateBuilder struct {
-	// setClause  []*setClause
+	*Conn
 	connname   string
 	table      string
 	columns    []string

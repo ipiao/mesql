@@ -10,7 +10,7 @@ import (
 
 // SelectBuilder 查询
 type SelectBuilder struct {
-	connname string
+	*Conn
 	distinct bool
 	columns  []string
 	from     string
@@ -220,7 +220,7 @@ func (s *SelectBuilder) Exec() *medb.Result {
 		res.SetErr(s.err)
 		return res
 	}
-	return connections[s.connname].Exec(s.sql, s.args...)
+	return s.Conn.Exec(s.sql, s.args...)
 }
 
 // QueryTo 解析到结构体，数组。。。
@@ -231,7 +231,7 @@ func (s *SelectBuilder) QueryTo(models interface{}) (int, error) {
 	if s.err != nil {
 		return 0, s.err
 	}
-	return connections[s.connname].Query(s.sql, s.args...).ScanTo(models)
+	return s.Conn.Query(s.sql, s.args...).ScanTo(models)
 }
 
 // QueryNext 把查询组成sql并解析
@@ -242,7 +242,7 @@ func (s *SelectBuilder) QueryNext(dest ...interface{}) error {
 	if s.err != nil {
 		return s.err
 	}
-	return connections[s.connname].Query(s.sql, s.args...).ScanNext(dest...)
+	return s.Conn.Query(s.sql, s.args...).ScanNext(dest...)
 }
 
 // LimitPP limit和offset的复用
@@ -261,7 +261,7 @@ func (s *SelectBuilder) CountCond(countCond ...string) (int64, string, error) {
 		countcond = countCond[0]
 	}
 	var sql, args = s.countsql(countcond)
-	var err = connections[s.connname].Query(sql, args...).ScanNext(&count)
+	var err = s.Conn.Query(sql, args...).ScanNext(&count)
 	return count, sql, err
 }
 
@@ -275,7 +275,7 @@ func (s *SelectBuilder) CountResult(alies string, countCond ...string) (int64, s
 		countcond = countCond[0]
 	}
 	var sql, args = s.countresult(alies, countcond)
-	var err = connections[s.connname].Query(sql, args...).ScanNext(&count)
+	var err = s.Conn.Query(sql, args...).ScanNext(&count)
 	return count, sql, err
 }
 

@@ -1,4 +1,3 @@
-// 参考 github.com/mgutz/dat/v1/common
 package common
 
 import (

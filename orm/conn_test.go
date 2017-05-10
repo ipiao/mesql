@@ -51,4 +51,5 @@ func TestConn(t *testing.T) {
 	err7 := builder3.Exec().Err()
 	t.Log(err7 == nil, err7)
 	t.Log(builder3.ToSQL())
+
 }

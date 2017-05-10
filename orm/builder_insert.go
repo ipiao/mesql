@@ -11,15 +11,15 @@ import (
 
 // InsertBuilder insert构造器
 type InsertBuilder struct {
-	connname string
-	table    string
-	columns  []string
-	values   [][]interface{}
-	sql      string
-	args     []interface{}
-	err      error
-	ignore   bool // 不存在则插入，存在则无操作
-	replace  bool
+	*Conn
+	table   string
+	columns []string
+	values  [][]interface{}
+	sql     string
+	args    []interface{}
+	err     error
+	ignore  bool // 不存在则插入，存在则无操作
+	replace bool
 }
 
 // reset
@@ -170,5 +170,5 @@ func (b *InsertBuilder) Exec() *medb.Result {
 		res.SetErr(b.err)
 		return res
 	}
-	return connections[b.connname].Exec(b.sql, b.args...)
+	return b.Conn.Exec(b.sql, b.args...)
 }
