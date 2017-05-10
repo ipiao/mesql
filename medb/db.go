@@ -11,9 +11,7 @@ import (
 // DB 自定义DB
 type DB struct {
 	*sql.DB
-	*sql.Tx
-	autoCommit bool
-	name       string
+	name string
 }
 
 // MountDB 嵌入db
@@ -25,20 +23,12 @@ func (d *DB) MountDB(db *sql.DB, name string) error {
 		return errors.New("db already has connection")
 	}
 	d.DB = db
-	d.autoCommit = true
 	d.name = name
 	return nil
 }
 
 // Exec 解析sql
 func (d *DB) Exec(sql string, args ...interface{}) *Result {
-	if !d.autoCommit {
-		var res, err = d.Tx.Exec(sql, args...)
-		if err != nil {
-			log.Printf("[medb] tx sql exec error:sql='%s',args=%v", sql, args)
-		}
-		return &Result{res, err}
-	}
 	var res, err = d.DB.Exec(sql, args...)
 	if err != nil {
 		log.Printf("[medb] sql exec error:sql='%s',args=%v", sql, args)
@@ -156,8 +146,8 @@ func (d *DB) Commit() error {
 	return err
 }
 
-// RollBack 回滚
-func (d *DB) RollBack() error {
+// Rollback 回滚
+func (d *DB) Rollback() error {
 	if d.autoCommit {
 		return errors.New("transaction closed")
 	}
