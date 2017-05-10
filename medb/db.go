@@ -127,26 +127,22 @@ func (d *DB) PrepareContext(ctx context.Context, sql string) *Stmt {
 // Begin 开启事务
 func (d *DB) Begin() error {
 	var err error
-	if d.autoCommit {
-		d.Tx, err = d.DB.Begin()
-		if err != nil {
-			return err
-		}
-		d.autoCommit = false
+	d.Tx, err = d.DB.Begin()
+	if err != nil {
+		return err
 	}
+	d.autoCommit = false
 	return nil
 }
 
 // BeginTx 开启事务
 func (d *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) error {
 	var err error
-	if d.autoCommit {
-		d.Tx, err = d.DB.BeginTx(ctx, opts)
-		if err != nil {
-			return err
-		}
-		d.autoCommit = false
+	d.Tx, err = d.DB.BeginTx(ctx, opts)
+	if err != nil {
+		return err
 	}
+	d.autoCommit = false
 	return nil
 }
 
