@@ -76,3 +76,43 @@ func (c *Conn) BeginBuilder() (*Builder, error) {
 		dialect:  c.dialect,
 	}, nil
 }
+
+// SQL 直接写sql
+func (c *Conn) SQL(sql string, args ...interface{}) *CommonBuilder {
+	return c.NewBuilder().SQL(sql, args...)
+}
+
+// Select 生成查询构造器
+func (c *Conn) Select(cols ...string) *SelectBuilder {
+	return c.NewBuilder().Select(cols...)
+}
+
+// Update 生成更新构造器
+func (c *Conn) Update(table string) *UpdateBuilder {
+	return c.NewBuilder().Update(table)
+}
+
+// InsertOrUpdate 生成插入或更新构造器
+func (c *Conn) InsertOrUpdate(table string) *InsupBuilder {
+	return c.NewBuilder().InsertOrUpdate(table)
+}
+
+// InsertInto 生成插入构造器
+func (c *Conn) InsertInto(table string) *InsertBuilder {
+	return c.NewBuilder().InsertInto(table)
+}
+
+// ReplaceInto 生成插入构造器
+func (c *Conn) ReplaceInto(table string) *InsertBuilder {
+	return c.NewBuilder().ReplaceInto(table)
+}
+
+// DeleteFrom 生成删除构造器
+func (c *Conn) DeleteFrom(table string) *DeleteBuilder {
+	return c.NewBuilder().DeleteFrom(table)
+}
+
+// Delete 生成删除构造器
+func (c *Conn) Delete(column string) *DeleteBuilder {
+	return c.NewBuilder().Delete(column)
+}
