@@ -30,8 +30,9 @@ func (c *Builder) Rollback() error {
 // SQL 直接写sql
 func (c *Builder) SQL(sql string, args ...interface{}) *CommonBuilder {
 	return &CommonBuilder{
-		sql:  sql,
-		args: args,
+		builder: c,
+		sql:     sql,
+		args:    args,
 	}
 }
 
