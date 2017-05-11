@@ -108,3 +108,13 @@ func (d *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 func (d *DB) OpenConnetcions() int {
 	return d.Stats().OpenConnections
 }
+
+// Commit 提交事务
+func (d *DB) Commit() error {
+	return nil
+}
+
+// Rollback 回滚
+func (d *DB) Rollback() error {
+	return nil
+}

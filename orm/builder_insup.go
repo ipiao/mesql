@@ -4,7 +4,7 @@ import "github.com/ipiao/mesql/medb"
 
 // InsupBuilder insert or update构造器
 type InsupBuilder struct {
-	*Conn
+	builder    *Builder
 	table      string
 	inscolumns []string
 	upcolumns  []string
@@ -134,5 +134,5 @@ func (b *InsupBuilder) Exec() *medb.Result {
 		res.SetErr(b.err)
 		return res
 	}
-	return b.Conn.Exec(b.sql, b.args...)
+	return b.builder.Exec(b.sql, b.args...)
 }

@@ -10,7 +10,7 @@ import (
 )
 
 // InsertModels 插入结构体或结构体数组
-func (c *Conn) InsertModels(models interface{}) *medb.Result {
+func (c *Builder) InsertModels(models interface{}) *medb.Result {
 	var r = new(medb.Result)
 	var value = reflect.Indirect(reflect.ValueOf(models))
 	var k = value.Kind()
@@ -30,7 +30,7 @@ func (c *Conn) InsertModels(models interface{}) *medb.Result {
 
 // 插入结构体
 // mysql 的主键遇 0 值可以自动忽略
-func (c *Conn) insertStruct(v *reflect.Value) *medb.Result {
+func (c *Builder) insertStruct(v *reflect.Value) *medb.Result {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -65,7 +65,7 @@ func (c *Conn) insertStruct(v *reflect.Value) *medb.Result {
 }
 
 // 插入数组
-func (c *Conn) insertSlice(v *reflect.Value) *medb.Result {
+func (c *Builder) insertSlice(v *reflect.Value) *medb.Result {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 

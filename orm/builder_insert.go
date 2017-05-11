@@ -2,16 +2,15 @@ package meorm
 
 import (
 	"errors"
-	"reflect"
-
 	"fmt"
+	"reflect"
 
 	"github.com/ipiao/mesql/medb"
 )
 
 // InsertBuilder insert构造器
 type InsertBuilder struct {
-	*Conn
+	builder *Builder
 	table   string
 	columns []string
 	values  [][]interface{}
@@ -170,5 +169,5 @@ func (b *InsertBuilder) Exec() *medb.Result {
 		res.SetErr(b.err)
 		return res
 	}
-	return b.Conn.Exec(b.sql, b.args...)
+	return b.builder.Exec(b.sql, b.args...)
 }

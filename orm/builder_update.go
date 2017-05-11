@@ -7,7 +7,7 @@ import (
 // UpdateBuilder 更新构造器
 // 只支持单个更新
 type UpdateBuilder struct {
-	*Conn
+	builder    *Builder
 	connname   string
 	table      string
 	columns    []string
@@ -160,5 +160,5 @@ func (u *UpdateBuilder) Exec() *medb.Result {
 		var res = new(medb.Result).SetErr(u.err)
 		return res
 	}
-	return connections[u.connname].Exec(u.sql, u.args...)
+	return u.builder.Exec(u.sql, u.args...)
 }
