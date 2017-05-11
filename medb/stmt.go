@@ -1,6 +1,7 @@
 package medb
 
 import (
+	"context"
 	"database/sql"
 )
 
@@ -22,9 +23,21 @@ func (s *Stmt) Exec(params ...interface{}) *Result {
 	return &Result{Result: res, err: err}
 }
 
+// ExecContext 解析
+func (s *Stmt) ExecContext(ctx context.Context, params ...interface{}) *Result {
+	var res, err = s.Stmt.ExecContext(ctx, params...)
+	return &Result{Result: res, err: err}
+}
+
 // Query 查询
 func (s *Stmt) Query(params ...interface{}) *Rows {
 	var rows, err = s.Stmt.Query(params...)
+	return &Rows{Rows: rows, err: err}
+}
+
+// QueryContext 查询
+func (s *Stmt) QueryContext(ctx context.Context, params ...interface{}) *Rows {
+	var rows, err = s.Stmt.QueryContext(ctx, params...)
 	return &Rows{Rows: rows, err: err}
 }
 

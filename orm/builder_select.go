@@ -213,36 +213,27 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 // Exec 查询不建议使用
 func (s *SelectBuilder) Exec() *medb.Result {
 	var res = new(medb.Result)
-	if len(s.sql) == 0 {
-		s.tosql()
-	}
 	if s.err != nil {
 		res.SetErr(s.err)
 		return res
 	}
-	return s.builder.Exec(s.sql, s.args...)
+	return s.builder.Exec(s)
 }
 
 // QueryTo 解析到结构体，数组。。。
 func (s *SelectBuilder) QueryTo(models interface{}) (int, error) {
-	if len(s.sql) == 0 {
-		s.tosql()
-	}
 	if s.err != nil {
 		return 0, s.err
 	}
-	return s.builder.Query(s.sql, s.args...).ScanTo(models)
+	return s.builder.Query(s).ScanTo(models)
 }
 
 // QueryNext 把查询组成sql并解析
 func (s *SelectBuilder) QueryNext(dest ...interface{}) error {
-	if len(s.sql) == 0 {
-		s.tosql()
-	}
 	if s.err != nil {
 		return s.err
 	}
-	return s.builder.Query(s.sql, s.args...).ScanNext(dest...)
+	return s.builder.Query(s).ScanNext(dest...)
 }
 
 // LimitPP limit和offset的复用
@@ -261,7 +252,7 @@ func (s *SelectBuilder) CountCond(countCond ...string) (int64, string, error) {
 		countcond = countCond[0]
 	}
 	var sql, args = s.countsql(countcond)
-	var err = s.builder.Query(sql, args...).ScanNext(&count)
+	var err = s.builder.Executor.Query(sql, args...).ScanNext(&count)
 	return count, sql, err
 }
 
@@ -275,7 +266,7 @@ func (s *SelectBuilder) CountResult(alies string, countCond ...string) (int64, s
 		countcond = countCond[0]
 	}
 	var sql, args = s.countresult(alies, countcond)
-	var err = s.builder.Query(sql, args...).ScanNext(&count)
+	var err = s.builder.Executor.Query(sql, args...).ScanNext(&count)
 	return count, sql, err
 }
 

@@ -18,17 +18,17 @@ func (comm *CommonBuilder) AppendSQL(sql string, args ...interface{}) *CommonBui
 
 // Exec 查询不建议使用
 func (comm *CommonBuilder) Exec() *medb.Result {
-	return comm.builder.Exec(comm.sql, comm.args...)
+	return comm.builder.Exec(comm)
 }
 
 // QueryTo 解析到结构体，数组。。。
 func (comm *CommonBuilder) QueryTo(models interface{}) (int, error) {
-	return comm.builder.Query(comm.sql, comm.args...).ScanTo(models)
+	return comm.builder.Query(comm).ScanTo(models)
 }
 
 // QueryNext 把查询组成sql并解析
 func (comm *CommonBuilder) QueryNext(dest ...interface{}) error {
-	return comm.builder.Query(comm.sql, comm.args...).ScanNext(dest...)
+	return comm.builder.Query(comm).ScanNext(dest...)
 }
 
 // ToSQL 把查询组成sql并解析

@@ -127,12 +127,9 @@ func (b *InsupBuilder) ToSQL() (string, []interface{}) {
 // Exec 执行
 func (b *InsupBuilder) Exec() *medb.Result {
 	var res = new(medb.Result)
-	if len(b.sql) == 0 {
-		b.tosql()
-	}
 	if b.err != nil {
 		res.SetErr(b.err)
 		return res
 	}
-	return b.builder.Exec(b.sql, b.args...)
+	return b.builder.Exec(b)
 }

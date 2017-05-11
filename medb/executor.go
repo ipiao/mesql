@@ -8,6 +8,6 @@ type Executor interface {
 	ExecContext(ctx context.Context, sql string, args ...interface{}) *Result
 	Query(sql string, args ...interface{}) *Rows
 	QueryContext(ctx context.Context, sql string, args ...interface{}) *Rows
-	Rollback() error
-	Commit() error
+	Prepare(sql string) *Stmt
+	PrepareContext(ctx context.Context, sql string) *Stmt
 }

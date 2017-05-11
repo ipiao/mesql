@@ -153,12 +153,9 @@ func (u *UpdateBuilder) ToSQL() (string, []interface{}) {
 
 // Exec 执行
 func (u *UpdateBuilder) Exec() *medb.Result {
-	if len(u.sql) == 0 {
-		u.tosql()
-	}
 	if u.err != nil {
 		var res = new(medb.Result).SetErr(u.err)
 		return res
 	}
-	return u.builder.Exec(u.sql, u.args...)
+	return u.builder.Exec(u)
 }

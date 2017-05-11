@@ -128,12 +128,19 @@ func (d *DeleteBuilder) ToSQL() (string, []interface{}) {
 // Exec 执行
 func (d *DeleteBuilder) Exec() *medb.Result {
 	var res = new(medb.Result)
-	if len(d.sql) == 0 {
-		d.tosql()
-	}
 	if d.err != nil {
 		res.SetErr(d.err)
 		return res
 	}
-	return d.builder.Exec(d.sql, d.args...)
+	return d.builder.Exec(d)
+}
+
+// PrepareExec 预处理后执行
+func (d *DeleteBuilder) PrepareExec() *medb.Result {
+	var res = new(medb.Result)
+	if d.err != nil {
+		res.SetErr(d.err)
+		return res
+	}
+	return d.builder.Prepare(d.sql).Exec(d.args...)
 }

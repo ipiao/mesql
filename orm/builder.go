@@ -13,12 +13,18 @@ type Builder struct {
 
 // Commit 提交事务
 func (c *Builder) Commit() error {
-	return c.Commit()
+	if tx, ok := c.Executor.(*medb.Tx); ok {
+		return tx.Commit()
+	}
+	return nil
 }
 
 // Rollback 回滚
 func (c *Builder) Rollback() error {
-	return c.Rollback()
+	if tx, ok := c.Executor.(*medb.Tx); ok {
+		return tx.Rollback()
+	}
+	return nil
 }
 
 // SQL 直接写sql
@@ -84,4 +90,9 @@ func (c *Builder) Delete(column string) *DeleteBuilder {
 	builder.builder = c
 	builder.column = column
 	return builder
+}
+
+// NewUnConnBuilder 创建无连接构造器
+func NewUnConnBuilder() *Builder {
+	return &Builder{}
 }

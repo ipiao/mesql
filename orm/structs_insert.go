@@ -61,7 +61,7 @@ func (c *Builder) insertStruct(v *reflect.Value) *medb.Result {
 	valueStr += ")"
 	buf.WriteString(valueStr)
 	var args = values[0]
-	return c.Exec(buf.String(), args...)
+	return c.Executor.Exec(buf.String(), args...)
 }
 
 // 插入数组
@@ -101,5 +101,5 @@ func (c *Builder) insertSlice(v *reflect.Value) *medb.Result {
 	for i := range values {
 		args = append(args, values[i]...)
 	}
-	return c.Exec(buf.String(), args...)
+	return c.Executor.Exec(buf.String(), args...)
 }
