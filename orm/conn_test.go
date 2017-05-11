@@ -70,3 +70,13 @@ func BenchMarkBUilder(b *testing.B) {
 		conn.NewBuilder().InsertInto("user").Columns("name").Values("nameN").Exec()
 	}
 }
+
+func TestBuilderInter(t *testing.T) {
+	time1 := time.Now().UnixNano()
+	conn := NewConnection("mysql", "root:1001@tcp(127.0.0.1:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai", "test")
+	time2 := time.Now().UnixNano()
+	t.Log("conn time:", time2-time1)
+
+	res := conn.NewBuilder().Exec(nil)
+	t.Log(res)
+}
