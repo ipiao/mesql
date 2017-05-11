@@ -228,12 +228,28 @@ func (s *SelectBuilder) QueryTo(models interface{}) (int, error) {
 	return s.builder.Query(s).ScanTo(models)
 }
 
+// PrepareQueryTo 解析到结构体，数组。。。
+func (s *SelectBuilder) PrepareQueryTo(models interface{}) (int, error) {
+	if s.err != nil {
+		return 0, s.err
+	}
+	return s.builder.PrepareQuery(s).ScanTo(models)
+}
+
 // QueryNext 把查询组成sql并解析
 func (s *SelectBuilder) QueryNext(dest ...interface{}) error {
 	if s.err != nil {
 		return s.err
 	}
 	return s.builder.Query(s).ScanNext(dest...)
+}
+
+// PrepareQueryNext 把查询组成sql并解析
+func (s *SelectBuilder) PrepareQueryNext(dest ...interface{}) error {
+	if s.err != nil {
+		return s.err
+	}
+	return s.builder.PrepareQuery(s).ScanNext(dest...)
 }
 
 // LimitPP limit和offset的复用
