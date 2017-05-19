@@ -38,3 +38,27 @@ func TestDB(t *testing.T) {
 
 	t.Fatal("commit  err", err)
 }
+
+func TestScan(t *testing.T) {
+	type Date struct {
+		D string
+	}
+	type User struct {
+		Name string
+		Data *Date
+		Age  int
+		Date time.Time
+	}
+	err := RegisterDB("test", "mysql", "root:1001@tcp(127.0.0.1:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
+	if err != nil {
+		t.Fatal("register db err:", err)
+	}
+	db := OpenDB("test")
+	var us []User
+	db.Query(`select * from user`).ScanTo(&us)
+	for _, u := range us {
+		t.Log(u)
+		t.Log(&us)
+		t.Log(&u)
+	}
+}
