@@ -55,7 +55,10 @@ func TestScan(t *testing.T) {
 	}
 	db := OpenDB("test")
 	var us []User
-	db.Query(`select * from user`).ScanTo(&us)
+	_, err = db.Query(`select * from user`).ScanTo(us)
+	if err != nil {
+		t.Log(err)
+	}
 	for _, u := range us {
 		t.Log(u)
 		t.Log(&us)

@@ -2,6 +2,7 @@ package medb
 
 import (
 	"database/sql"
+	"errors"
 	"reflect"
 )
 
@@ -182,10 +183,13 @@ func newData(value interface{}) (*data, error) {
 	var d = new(data)
 	d.t = reflect.TypeOf(value)
 	d.v = reflect.ValueOf(value)
-	if d.t.Kind() == reflect.Ptr {
-		d.t = d.t.Elem()
-		d.v = d.v.Elem()
+	if d.t.Kind() != reflect.Ptr {
+		return nil, errors.New("destination data must be kind of ptr")
 	}
+
+	d.t = d.t.Elem()
+	d.v = d.v.Elem()
+
 	switch d.t.Kind() {
 	case reflect.Slice:
 		d.slice = true

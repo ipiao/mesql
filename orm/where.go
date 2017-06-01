@@ -63,7 +63,7 @@ func (w *Where) wherein(col string, args ...interface{}) *Where {
 		}
 	}()
 	if len(args) == 0 {
-		w.err = errors.New("length of args in method wherein can not be 0")
+		w.err = fmt.Errorf("length of args in method wherein %s can not be 0", col)
 		return w
 	}
 	var v = reflect.Indirect(reflect.ValueOf(args))

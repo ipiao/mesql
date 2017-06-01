@@ -101,6 +101,7 @@ func (b *InsertBuilder) Models(models interface{}) *InsertBuilder {
 }
 
 // tosql
+// 多单行插入效率更高
 func (b *InsertBuilder) tosql() (string, []interface{}) {
 	if b.replace && b.ignore {
 		b.err = errors.New("replace and ignore can not simultaneous exists")
