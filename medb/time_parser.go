@@ -6,9 +6,10 @@ import (
 	"time"
 )
 
-// TimeParser 时间解析
+// TimeParser parse time data to time.Time
 type TimeParser func(*reflect.Value, interface{}) error
 
+// defaultTimeParser Default time parse
 func defaultTimeParser(value *reflect.Value, field interface{}) error {
 	var err error
 	var s = sql.NullString{}
@@ -40,6 +41,7 @@ func defaultTimeParser(value *reflect.Value, field interface{}) error {
 	return err
 }
 
+// set time parser to default-timeparser
 var timeparse TimeParser = defaultTimeParser
 
 // RegisterTimeParser 注册时间解析器

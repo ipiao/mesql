@@ -176,9 +176,10 @@ type data struct {
 }
 
 // newData 生成一个data的描述
-//t,v value的反射类型和反射值,如果是指针型则返回指向的类型、值
-//slice 是否是切片类型
-//destType 如果是切片类型，则指向切片元素所对应的类型
+//	t,v value的反射类型和反射值,如果是指针型则返回指向的类型、值
+//	slice 是否是切片类型
+//	destType 如果是切片类型，则指向切片元素所对应的类型
+// 	data must be kind of ptr
 func newData(value interface{}) (*data, error) {
 	var d = new(data)
 	d.t = reflect.TypeOf(value)
