@@ -25,18 +25,6 @@ func defaultTimeParser(value *reflect.Value, field interface{}) error {
 		if err == nil {
 			value.Set(reflect.ValueOf(t))
 		}
-	} else {
-		var i = sql.NullInt64{}
-		var err = i.Scan(field)
-		if err != nil {
-			return err
-		}
-		if i.Valid {
-			t := time.Unix(i.Int64, 0)
-			if err == nil {
-				value.Set(reflect.ValueOf(t))
-			}
-		}
 	}
 	return err
 }
