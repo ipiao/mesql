@@ -62,8 +62,8 @@ func (b *InsertBuilder) Models(models interface{}) *InsertBuilder {
 		t = t.Elem()
 		v = v.Elem()
 	}
-	var cols = GetColumns(v)
-	var vals = GetValues(v)
+	var cols = getColumns(v)
+	var vals = getValues(v)
 	if len(b.columns) == 0 || len(cols) == 0 {
 		b.err = errors.New("columns can not be null")
 		return b
@@ -74,6 +74,10 @@ func (b *InsertBuilder) Models(models interface{}) *InsertBuilder {
 			b.columns = cols
 		}
 	}
+	if len(b.table) == 0 {
+		b.table = getTableName(v)
+	}
+
 	// 获取列名和结构体字段列的映射
 	var tempMap = make(map[int]int, len(b.columns))
 	for i, column := range b.columns {

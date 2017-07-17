@@ -1,6 +1,10 @@
 package meorm
 
 import (
+	"errors"
+	"fmt"
+	"reflect"
+
 	"github.com/ipiao/mesql/medb"
 )
 
@@ -45,15 +49,62 @@ func (u *UpdateBuilder) reset() *UpdateBuilder {
 
 // Set 设置值
 func (u *UpdateBuilder) Set(column string, value interface{}) *UpdateBuilder {
-	u.columns = append(u.columns, column+"=?")
+	u.columns = append(u.columns, column)
 	u.values = append(u.values, value)
 	return u
 }
 
-// SetS 设置值
-func (u *UpdateBuilder) SetS(column string, values ...interface{}) *UpdateBuilder {
-	u.columns = append(u.columns, column)
-	u.values = append(u.values, values...)
+// Colunms 设置更新列
+func (u *UpdateBuilder) Colunms(column ...string) *UpdateBuilder {
+	u.columns = append(u.columns, column...)
+	return u
+}
+
+// Models 插入结构体
+// models必须为结构体、结构体数组，或者相应的指针
+func (u *UpdateBuilder) Models(models interface{}) *UpdateBuilder {
+	var t = reflect.TypeOf(models)
+	var v = reflect.ValueOf(models)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		v = v.Elem()
+	}
+	var cols = getColumns(v)
+	var vals = getValues(v)
+	if len(u.columns) == 0 && len(cols) == 0 {
+		u.err = errors.New("columns can not be null")
+		return u
+	}
+	//
+	if len(u.columns) == 0 {
+		u.columns = cols
+	}
+	if len(u.table) == 0 {
+		u.table = getTableName(v)
+	}
+	// 获取列名和结构体字段列的映射
+	var tempMap = make(map[int]int, len(u.columns))
+	for i, column := range u.columns {
+		flag := 0
+		for j, col := range cols {
+			if column == col {
+				tempMap[i] = j
+				flag++
+				break
+			}
+		}
+		if flag == 0 {
+			u.err = fmt.Errorf("can not find column %s in models", column)
+		}
+	}
+	// 拼接值
+	for _, val := range vals {
+		var value = make([]interface{}, len(u.columns))
+		for i, v := range tempMap {
+			value[i] = val[v]
+		}
+		u.values = append(u.values, value)
+	}
 	return u
 }
 
@@ -104,7 +155,7 @@ func (u *UpdateBuilder) tosql() (string, []interface{}) {
 		if i > 0 {
 			buf.WriteString(", ")
 		}
-		buf.WriteString(s)
+		buf.WriteString(s + "=?")
 	}
 	args = append(args, u.values...)
 

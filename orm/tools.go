@@ -11,8 +11,8 @@ import (
 
 var reg = regexp.MustCompile(`\B[A-Z]`)
 
-// transFieldName 转换字段名称
-func transFieldName(name string) string {
+// TransFieldName 转换字段名称
+func TransFieldName(name string) string {
 	return strings.ToLower(reg.ReplaceAllString(name, "_$0"))
 }
 
@@ -34,8 +34,15 @@ func SnakeName(base string) string {
 	return string(r)
 }
 
-// GetTableName 获取结构体对应的表的名字,v必须为结构体
-func GetTableName(v reflect.Value) string {
+// GetTableName get the table name of a obj
+// ths obj intends to be kind of struct/slice/ptr
+func GetTableName(obj interface{}) string {
+	var v = reflect.Indirect(reflect.ValueOf(obj))
+	return getTableName(v)
+}
+
+// getTableName 获取结构体对应的表的名字,v必须为结构体
+func getTableName(v reflect.Value) string {
 	var tbName string
 	if v.Kind() == reflect.Struct {
 		var tbnameV = v.MethodByName("TableName")
@@ -43,30 +50,30 @@ func GetTableName(v reflect.Value) string {
 			var args = make([]reflect.Value, 0)
 			tbName = tbnameV.Call(args)[0].String()
 		} else {
-			tbName = transFieldName(v.Type().Name())
+			tbName = TransFieldName(v.Type().Name())
 		}
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-		return GetTableName(reflect.Indirect(v.Index(0)))
+		return getTableName(reflect.Indirect(v.Index(0)))
 	} else {
-		panic(fmt.Sprintf("Error kind %s", v.Kind().String()))
+		return fmt.Sprintf("Invalid kind %s", v.Kind().String())
 	}
 	return tbName
 }
 
-// GetColumns 获取要插入的表列,v必须为结构体
-func GetColumns(v reflect.Value) []string {
+// getColumns 获取要插入的表列,v必须为结构体
+func getColumns(v reflect.Value) []string {
 	var columns []string
 	if v.Kind() == reflect.Struct {
 		var l = v.NumField()
 		for i := 0; i < l; i++ {
 			var f = v.Type().Field(i)
 			if f.Anonymous {
-				columns = append(columns, GetColumns(v.Field(i))...)
+				columns = append(columns, getColumns(v.Field(i))...)
 			} else {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
 				var colName = tagMap[ormFieldSelectTag]
 				if colName == "" {
-					colName = transFieldName(f.Name)
+					colName = TransFieldName(f.Name)
 				}
 				if colName == "_" {
 					continue
@@ -75,22 +82,22 @@ func GetColumns(v reflect.Value) []string {
 			}
 		}
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-		return GetColumns(reflect.Indirect(v.Index(0)))
+		return getColumns(reflect.Indirect(v.Index(0)))
 	} else {
 		panic(fmt.Sprintf("Error kind %s", v.Kind().String()))
 	}
 	return columns
 }
 
-// GetValues 获取值
-func GetValues(v reflect.Value) [][]interface{} {
+// getValues 获取值
+func getValues(v reflect.Value) [][]interface{} {
 	if v.Kind() == reflect.Struct {
 		var values = make([][]interface{}, 1)
 		var l = v.NumField()
 		for i := 0; i < l; i++ {
 			var f = v.Type().Field(i)
 			if f.Anonymous {
-				values[0] = append(values[0], GetValues(v.Field(i))[0]...)
+				values[0] = append(values[0], getValues(v.Field(i))[0]...)
 			} else {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
 				var colName = tagMap[ormFieldSelectTag]
@@ -104,7 +111,7 @@ func GetValues(v reflect.Value) [][]interface{} {
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
 		var values = make([][]interface{}, 0)
 		for i := 0; i < v.Len(); i++ {
-			values = append(values, GetValues(reflect.Indirect(v.Index(i)))...)
+			values = append(values, getValues(reflect.Indirect(v.Index(i)))...)
 		}
 		return values
 	} else {

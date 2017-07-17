@@ -34,9 +34,9 @@ func (c *Builder) insertStruct(v *reflect.Value) *medb.Result {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
-	var tbName = GetTableName(*v)
-	var cols = GetColumns(*v)
-	var values = GetValues(*v)
+	var tbName = getTableName(*v)
+	var cols = getColumns(*v)
+	var values = getValues(*v)
 
 	if tbName == "" || len(cols) == 0 {
 		var res = new(medb.Result)
@@ -69,9 +69,9 @@ func (c *Builder) insertSlice(v *reflect.Value) *medb.Result {
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
-	var tbName = GetTableName(*v)
-	var cols = GetColumns(*v)
-	var values = GetValues(*v)
+	var tbName = getTableName(*v)
+	var cols = getColumns(*v)
+	var values = getValues(*v)
 
 	if tbName == "" || len(cols) == 0 {
 		var res = new(medb.Result)
