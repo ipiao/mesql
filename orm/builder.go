@@ -93,7 +93,7 @@ func (c *Builder) Delete(column string) *DeleteBuilder {
 	return builder
 }
 
-// NewUnConnBuilder 创建无连接构造器
-func NewUnConnBuilder() *Builder {
+// NewBuilder 创建无连接构造器
+func NewBuilder() *Builder {
 	return &Builder{}
 }
