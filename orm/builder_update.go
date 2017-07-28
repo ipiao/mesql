@@ -103,7 +103,7 @@ func (u *UpdateBuilder) Models(models interface{}) *UpdateBuilder {
 		for i, v := range tempMap {
 			value[i] = val[v]
 		}
-		u.values = append(u.values, value)
+		u.values = append(u.values, value...)
 	}
 	return u
 }
