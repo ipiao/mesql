@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
+
+	metools "github.com/ipiao/metools/utils"
 )
 
 // Rows 数据行
@@ -105,7 +107,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 								continue
 							}
 							if fieldName == "" {
-								fieldName = transFieldName(fieldType.Name)
+								fieldName = metools.SnakeName(fieldType.Name)
 							}
 							var index, ok = r.columns[fieldName]
 							if ok {

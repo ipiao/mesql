@@ -3,36 +3,10 @@ package meorm
 import (
 	"fmt"
 	"reflect"
-	"regexp"
-	"strings"
 
 	"github.com/ipiao/mesql/medb"
+	metools "github.com/ipiao/metools/utils"
 )
-
-var reg = regexp.MustCompile(`\B[A-Z]`)
-
-// TransFieldName 转换字段名称
-func TransFieldName(name string) string {
-	return strings.ToLower(reg.ReplaceAllString(name, "_$0"))
-}
-
-// SnakeName 驼峰转蛇形
-func SnakeName(base string) string {
-	var r = make([]rune, 0, len(base))
-	var b = []rune(base)
-	for i := 0; i < len(b); i++ {
-		if i > 0 && b[i] >= 'A' && b[i] <= 'Z' {
-			r = append(r, '_', b[i]+32)
-			continue
-		}
-		if i == 0 && b[i] >= 'A' && b[i] <= 'Z' {
-			r = append(r, b[i]+32)
-			continue
-		}
-		r = append(r, b[i])
-	}
-	return string(r)
-}
 
 // GetTableName get the table name of a obj
 // ths obj intends to be kind of struct/slice/ptr
@@ -50,7 +24,7 @@ func getTableName(v reflect.Value) string {
 			var args = make([]reflect.Value, 0)
 			tbName = tbnameV.Call(args)[0].String()
 		} else {
-			tbName = TransFieldName(v.Type().Name())
+			tbName = metools.SnakeName(v.Type().Name())
 		}
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
 		return getTableName(reflect.Indirect(v.Index(0)))
@@ -73,7 +47,7 @@ func getColumns(v reflect.Value) []string {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
 				var colName = tagMap[ormFieldSelectTag]
 				if colName == "" {
-					colName = TransFieldName(f.Name)
+					colName = metools.SnakeName(f.Name)
 				}
 				if colName == "_" {
 					continue
