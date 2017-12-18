@@ -14,9 +14,7 @@ type Tx struct {
 // Exec 解析sql
 func (d *Tx) Exec(sql string, args ...interface{}) *Result {
 	var res, err = d.Tx.Exec(sql, args...)
-	if err != nil {
-		log.Printf("[medb] tx sql exec error:sql='%s',args=%v", sql, args)
-	}
+	logSQL(err, sql, args...)
 	return &Result{res, err}
 }
 
@@ -32,18 +30,14 @@ func (d *Tx) ExecContext(ctx context.Context, sql string, args ...interface{}) *
 // Query 查询
 func (d *Tx) Query(sql string, args ...interface{}) *Rows {
 	var rows, err = d.Tx.Query(sql, args...)
-	if err != nil {
-		log.Printf("[medb] tx sql query error:sql='%s',args=%v", sql, args)
-	}
+	logSQL(err, sql, args...)
 	return &Rows{Rows: rows, err: err}
 }
 
 // QueryContext 查询
 func (d *Tx) QueryContext(ctx context.Context, sql string, args ...interface{}) *Rows {
 	var rows, err = d.Tx.QueryContext(ctx, sql, args...)
-	if err != nil {
-		log.Printf("[medb] tx sql query context error:sql='%s',args=%v", sql, args)
-	}
+	logSQL(err, sql, args...)
 	return &Rows{Rows: rows, err: err}
 }
 

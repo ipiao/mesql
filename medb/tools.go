@@ -1,6 +1,7 @@
 package medb
 
 import (
+	"log"
 	"strings"
 )
 
@@ -17,4 +18,14 @@ func ParseTag(tag string) map[string]string {
 		}
 	}
 	return res
+}
+
+func logSQL(err error, sql string, args ...interface{}) {
+	if err != nil {
+		log.Printf("[medb] %s -- %v,[error] %v", sql, args, err)
+	} else {
+		if showSQL {
+			log.Printf("[medb] %s -- %v", sql, args)
+		}
+	}
 }

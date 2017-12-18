@@ -12,6 +12,7 @@ var (
 	maxOpenConnNum = 30
 	maxIdleConnNum = 10
 	maxLifeTime    = time.Minute * 30
+	showSQL        = false
 )
 
 // 标签
@@ -19,6 +20,11 @@ const (
 	MedbTag       = "db"
 	MedbFieldName = "col"
 )
+
+// ShowSQL 是否打印日志
+func ShowSQL(b bool) {
+	showSQL = b
+}
 
 // RegisterDB 注册数据库连接
 // name:给数据库连接的命名

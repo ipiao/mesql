@@ -26,6 +26,11 @@ type Conn struct {
 	dialect dialect.Dialect
 }
 
+// ShowSQL 打印日志
+func ShowSQL(b bool) {
+	medb.ShowSQL(b)
+}
+
 // MountConnection 直接移植已有数据连接
 func MountConnection(name string, basedb *sql.DB, dialect dialect.Dialect) *Conn {
 	mutex.Lock()
