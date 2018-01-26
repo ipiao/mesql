@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/ipiao/mesql/medb"
-	metools "github.com/ipiao/metools/utils"
+	"github.com/ipiao/metools/mutils"
 )
 
 // GetTableName get the table name of a obj
@@ -24,7 +24,7 @@ func getTableName(v reflect.Value) string {
 			var args = make([]reflect.Value, 0)
 			tbName = tbnameV.Call(args)[0].String()
 		} else {
-			tbName = metools.SnakeName(v.Type().Name())
+			tbName = mutils.SnakeName(v.Type().Name())
 		}
 	} else if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
 		return getTableName(reflect.Indirect(v.Index(0)))
@@ -47,7 +47,7 @@ func getColumns(v reflect.Value) []string {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
 				var colName = tagMap[ormFieldSelectTag]
 				if colName == "" {
-					colName = metools.SnakeName(f.Name)
+					colName = mutils.SnakeName(f.Name)
 				}
 				if colName == "_" {
 					continue

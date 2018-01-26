@@ -1,6 +1,0 @@
-package mecache
-
-//
-func TestCache() {
-
-}
