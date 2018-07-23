@@ -1,9 +1,9 @@
 package medb
 
 import (
+	"fmt"
 	"math/rand"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -18,9 +18,33 @@ func transFieldName(name string) string {
 
 // 这是解决连接命名的临时方案
 func RandomName() string {
-	var res = time.Now().Format("20060102150405")
-	for i := 0; i < 6; i++ {
-		res += strconv.FormatInt(seed.Int63n(1001), 16)
-	}
+	var res = fmt.Sprintf("%d%d", time.Now().UnixNano(), rand.Intn(8999)+1000)
 	return res
+}
+
+func ParseTime(s string) (time.Time, error) {
+	var layout = ""
+	l := len(s)
+	if l > 19 {
+		s = s[:10] + " " + s[11:19]
+		l = 19
+	}
+	switch l {
+	case 19:
+		s1 := s[4:5]
+		layout = fmt.Sprintf("2006%s01%s02 15:04:05", s1, s1)
+	case 10:
+		s1 := s[4:5]
+		layout = fmt.Sprintf("2006%s01%s02", s1, s1)
+	case 8:
+		layout = "15:04:05"
+	case 7:
+		s1 := s[4:5]
+		layout = fmt.Sprintf("2006%s01", s1)
+	}
+	if layout == "" {
+		return time.Time{}, fmt.Errorf("不支持的时间格式:%s", s)
+	}
+	v, err := time.ParseInLocation(layout, s, time.Local)
+	return v, err
 }
