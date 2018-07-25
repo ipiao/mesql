@@ -12,4 +12,6 @@ type Executor interface {
 	QueryContext(ctx context.Context, sql string, args ...interface{}) *Rows
 	Prepare(sql string) *Stmt
 	PrepareContext(ctx context.Context, sql string) *Stmt
+	Commit() error
+	Rollback() error
 }

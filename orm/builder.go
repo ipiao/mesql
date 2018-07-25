@@ -13,18 +13,12 @@ type Builder struct {
 
 // Commit 提交事务
 func (c *Builder) Commit() error {
-	if tx, ok := c.Executor.(*medb.Tx); ok {
-		return tx.Commit()
-	}
-	return nil
+	return c.Executor.Commit()
 }
 
 // Rollback 回滚
 func (c *Builder) Rollback() error {
-	if tx, ok := c.Executor.(*medb.Tx); ok {
-		return tx.Rollback()
-	}
-	return nil
+	return c.Executor.Rollback()
 }
 
 // SQL 直接写sql

@@ -33,9 +33,7 @@ func (d *DB) MountDB(db *sql.DB, name string) error {
 
 // Exec 解析sql
 func (d *DB) Exec(sql string, args ...interface{}) *Result {
-	var res, err = d.DB.Exec(sql, args...)
-	logSQL(err, sql, args...)
-	return &Result{res, err}
+	return d.ExecContext(context.TODO(), sql, args...)
 }
 
 // ExecContext 解析sql
@@ -47,11 +45,7 @@ func (d *DB) ExecContext(ctx context.Context, sql string, args ...interface{}) *
 
 // Query 查询
 func (d *DB) Query(sql string, args ...interface{}) *Rows {
-	var rows, err = d.DB.Query(sql, args...)
-	if err != nil {
-		logSQL(err, sql, args...)
-	}
-	return &Rows{Rows: rows, err: err}
+	return d.QueryContext(context.TODO(), sql, args...)
 }
 
 // QueryContext 查询

@@ -3,7 +3,6 @@ package medb
 import (
 	"context"
 	"database/sql"
-	"log"
 )
 
 // Tx 事务
@@ -13,25 +12,19 @@ type Tx struct {
 
 // Exec 解析sql
 func (d *Tx) Exec(sql string, args ...interface{}) *Result {
-	var res, err = d.Tx.Exec(sql, args...)
-	logSQL(err, sql, args...)
-	return &Result{res, err}
+	return d.ExecContext(context.TODO(), sql, args...)
 }
 
 // ExecContext 解析sql
 func (d *Tx) ExecContext(ctx context.Context, sql string, args ...interface{}) *Result {
 	var res, err = d.Tx.ExecContext(ctx, sql, args...)
-	if err != nil {
-		log.Printf("[medb] tx sql exec context error:sql='%s',args=%v", sql, args)
-	}
+	logSQL(err, sql, args...)
 	return &Result{res, err}
 }
 
 // Query 查询
 func (d *Tx) Query(sql string, args ...interface{}) *Rows {
-	var rows, err = d.Tx.Query(sql, args...)
-	logSQL(err, sql, args...)
-	return &Rows{Rows: rows, err: err}
+	return d.QueryContext(context.TODO(), sql, args...)
 }
 
 // QueryContext 查询
