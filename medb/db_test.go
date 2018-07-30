@@ -82,21 +82,20 @@ func TestLogger(t *testing.T) {
 
 	medb.RegisterTimeParserFunc(datetool.ParseTime)
 
-	type Ager int
+	// type Ager int
 
-	type User struct {
-		Id        int
-		Name      string
-		Age       int        `db:"col:age;"`
-		CreatedAt *time.Time `db:"col:created_at;json"`
-	}
+	// type User struct {
+	// 	Id        int
+	// 	Name      string
+	// 	Age       int        `db:"col:age;"`
+	// 	CreatedAt *time.Time `db:"col:created_at;json"`
+	// }
 
-	u := User{}
-	af, err := db.Query("select * from user limit 1").ScanTo(&u)
+	// u := User{}
+	am, err := db.Query("select * from user ").ScanMapOne()
 	if err != nil {
 		t.Fatal("register db err:", err)
 	}
-	t.Log(af == 1)
+	t.Log(am)
 
-	t.Log(u)
 }

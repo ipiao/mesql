@@ -7,16 +7,16 @@ import (
 	"reflect"
 )
 
+// Row 单行
+type Row struct {
+	*sql.Row
+}
+
 // Rows 数据行
 type Rows struct {
 	*sql.Rows
 	err     error
 	columns map[string]int // 对应数据库的列名和列序号
-}
-
-// Row 单行
-type Row struct {
-	*sql.Row
 }
 
 // Err 返回错误信息
@@ -33,6 +33,129 @@ func (r *Rows) ScanNext(dest ...interface{}) error {
 		r.Scan(dest...)
 	}
 	return r.Close()
+}
+
+func (r *Rows) ColumnsMap() (map[string]int, error) {
+	if r.columns == nil {
+		cols, err := r.Columns()
+		if err != nil {
+			return nil, err
+		}
+		r.columns = make(map[string]int, len(cols))
+		for i, col := range cols {
+			r.columns[col] = i
+		}
+	}
+	return r.columns, nil
+}
+
+// ScanStrings 解析到字符串数组中
+func (r *Rows) ScanStrings() ([][]string, error) {
+	if r.err == nil {
+		colM, err := r.ColumnsMap()
+		if err != nil {
+			return nil, err
+		}
+		ret := make([][]string, 0)
+		defer r.Close()
+		for r.Next() {
+			rd := make([]string, len(colM))
+			err = r.Scan(StringsPtrToInterfaces(rd)...)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, rd)
+		}
+		return ret, nil
+	}
+	return nil, r.err
+}
+
+// ScanStringsOne 解析到字符串数组中,但是最多解析一条
+func (r *Rows) ScanStringsOne() ([]string, error) {
+	if r.err == nil {
+		colM, err := r.ColumnsMap()
+		if err != nil {
+			return nil, err
+		}
+		defer r.Close()
+		if r.Next() {
+			rd := make([]string, len(colM))
+			err = r.Scan(StringsPtrToInterfaces(rd)...)
+			return rd, err
+		}
+	}
+	return nil, r.err
+}
+
+// ScanMap 解析到map中
+func (r *Rows) ScanMap() (map[string][]string, error) {
+	if r.err == nil {
+		colM, err := r.ColumnsMap()
+		if err != nil {
+			return nil, err
+		}
+		ret := make(map[string][]string)
+		defer r.Close()
+		for r.Next() {
+			rd := make([]string, len(colM))
+			err = r.Scan(StringsPtrToInterfaces(rd)...)
+			if err != nil {
+				return nil, err
+			}
+			for col, ind := range colM {
+				ret[col] = append(ret[col], rd[ind])
+			}
+		}
+		return ret, nil
+	}
+	return nil, r.err
+}
+
+// ScanMapOne 解析到map中,但是最多解析一条
+func (r *Rows) ScanMapOne() (map[string]string, error) {
+	if r.err == nil {
+		colM, err := r.ColumnsMap()
+		if err != nil {
+			return nil, err
+		}
+		ret := make(map[string]string)
+		defer r.Close()
+		if r.Next() {
+			rd := make([]string, len(colM))
+			err = r.Scan(StringsPtrToInterfaces(rd)...)
+			if err != nil {
+				return nil, err
+			}
+			for col, ind := range colM {
+				ret[col] = rd[ind]
+			}
+		}
+		return ret, nil
+	}
+	return nil, r.err
+}
+
+// ScanTo 解析
+func (r *Rows) ScanTo(data interface{}) (int, error) {
+	if r.err == nil {
+		var d, err = newData(data) //	类型解析
+		if err != nil {
+			return 0, err
+		}
+		//	行解析，逐行解析rows的数据
+		for r.Next() && d.next() {
+			var v = d.newValue()
+			err = r.scan(v)
+			if err != nil {
+				return 0, err
+			}
+			d.setBack(v)
+		}
+		err = r.Close()
+		return d.length, nil
+	}
+	return 0, r.err
 }
 
 // parse 将fields转换成相应的类型并绑定到value上
@@ -129,24 +252,6 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 	return nil
 }
 
-// SnakeName 驼峰转蛇形
-func SnakeName(base string) string {
-	var r = make([]rune, 0, len(base))
-	var b = []rune(base)
-	for i := 0; i < len(b); i++ {
-		if b[i] >= 'A' && b[i] <= 'Z' {
-			if i == 0 {
-				r = append(r, b[i]+32)
-			} else {
-				r = append(r, '_', b[i]+32)
-			}
-		} else {
-			r = append(r, b[i])
-		}
-	}
-	return string(r)
-}
-
 // scan 单行解析
 func (r *Rows) scan(v reflect.Value) error {
 	if r.columns == nil {
@@ -169,28 +274,6 @@ func (r *Rows) scan(v reflect.Value) error {
 		err = r.parse(v, 0, fields)
 	}
 	return err
-}
-
-// ScanTo 解析
-func (r *Rows) ScanTo(data interface{}) (int, error) {
-	if r.err == nil {
-		var d, err = newData(data) //	类型解析
-		if err != nil {
-			return 0, err
-		}
-		//	行解析，逐行解析rows的数据
-		for r.Next() && d.next() {
-			var v = d.newValue()
-			err = r.scan(v)
-			if err != nil {
-				return 0, err
-			}
-			d.setBack(v)
-		}
-		err = r.Close()
-		return d.length, nil
-	}
-	return 0, r.err
 }
 
 // data 解析目标的描述
@@ -228,6 +311,14 @@ func newData(value interface{}) (*data, error) {
 	return d, nil
 }
 
+// next 能否继续获取
+func (r *data) next() bool {
+	if r.slice {
+		return true
+	}
+	return r.length < 1
+}
+
 // newValue 获取一个要生成的目标值的反射类型
 func (r *data) newValue() reflect.Value {
 	r.length++
@@ -256,10 +347,4 @@ func (r *data) setBack(value reflect.Value) {
 	}
 }
 
-// next 能否继续获取
-func (r *data) next() bool {
-	if r.slice {
-		return true
-	}
-	return r.length < 1
-}
+//=============
