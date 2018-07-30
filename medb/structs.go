@@ -5,20 +5,129 @@ package medb
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"reflect"
 )
 
-// // ScanStructs 解析到结构体
-// func (r *Rows) ScanStructs(date interface{}) error {
-// 	if r.err != nil {
-// 		return r.err
+type field struct {
+	sf   *reflect.StructField
+	kind reflect.Kind
+}
+
+// 获取结构的元素
+func getDataFieldsMap(t reflect.Type) (map[string]*field, error) {
+	return nil, nil
+}
+
+// 创建数据类型解析的数组
+func makeDataScanSlice(t reflect.Type, cols []string) ([]interface{}, error) {
+	dfMap, err := getDataFieldsMap(t)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]interface{}, len(cols))
+	for _, col := range cols {
+		if df, ok := dfMap[col]; ok {
+			switch df.kind {
+			case reflect.Bool:
+				ret = append(ret, &sql.NullBool{})
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				ret = append(ret, &sql.NullInt64{})
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				ret = append(ret, &sql.NullInt64{})
+			case reflect.Float32, reflect.Float64:
+				ret = append(ret, &sql.NullFloat64{})
+			case reflect.String:
+				ret = append(ret, &sql.NullString{})
+			default:
+				return nil, fmt.Errorf("unsupported field kind %s", df.kind.String())
+			}
+		} else {
+			return nil, fmt.Errorf("can not find col %s", col)
+		}
+	}
+	return ret, nil
+}
+
+// // 返回去创建反射值
+// func makeDataValues(t reflect.Type, vals []interface{}, cols []string) (*reflect.Value, error) {
+// 	dfMap, err := getDataFieldsMap(t)
+// 	if err != nil {
+// 		return nil, err
 // 	}
+// 	for _, val := range vals {
+// 		for _, col := range cols {
+// 			if df, ok := dfMap[col]; ok {
+// 				switch df.kind {
+// 				case reflect.Bool:
 
-// 	v := reflect.Indirect(reflect.ValueOf(data))
-
-// 	return nil
+// 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+// 					ret = append(ret, &sql.NullInt64{})
+// 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+// 					ret = append(ret, &sql.NullInt64{})
+// 				case reflect.Float32, reflect.Float64:
+// 					ret = append(ret, &sql.NullFloat64{})
+// 				case reflect.String:
+// 					ret = append(ret, &sql.NullString{})
+// 				default:
+// 					return nil, fmt.Errorf("unsupported field kind %s", df.kind.String())
+// 				}
+// 			} else {
+// 				return nil, fmt.Errorf("can not find col %s", col)
+// 			}
+// 		}
+// 	}
 // }
+
+// ScanSlice 解析结构数组
+func (r *Rows) ScanSlice(data interface{}) (int, error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+
+	v := reflect.Indirect(reflect.ValueOf(data))
+	if v.Kind() != reflect.Slice {
+		return 0, errors.New("not slice or ptr to slice")
+	}
+	// t := v.Elem().Type()  // 数组元素类型
+	et := v.Elem().Type() // 数组元素底层类型
+	if et.Kind() == reflect.Ptr {
+		et = et.Elem()
+	}
+
+	// // 获取到结构体的解析映射
+	// fieldsMap, err := getDataFieldsMap(et)
+	// if err != nil {
+	// 	return 0, err
+	// }
+
+	var cols []string
+	if r.columns == nil {
+		cols, err := r.Columns()
+		if err != nil {
+			return 0, err
+		}
+		r.columns = make(map[string]int, len(cols))
+		for i, col := range cols {
+			r.columns[col] = i
+		}
+	}
+
+	defer r.Close()
+	for r.Next() {
+		rd, err := makeDataScanSlice(et, cols)
+		if err != nil {
+			return 0, err
+		}
+		err = r.Scan(rd...)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return 0, nil
+}
 
 // ScanTo 解析
 func (r *Rows) ScanTo(data interface{}) (int, error) {
