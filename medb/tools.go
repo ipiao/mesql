@@ -1,5 +1,9 @@
 package medb
 
+import (
+	"database/sql"
+)
+
 // SnakeName 驼峰转蛇形
 func SnakeName(base string) string {
 	var r = make([]rune, 0, len(base))
@@ -22,6 +26,22 @@ func StringsPtrToInterfaces(ss []string) []interface{} {
 	var ret = make([]interface{}, len(ss))
 	for i := range ss {
 		ret[i] = &ss[i]
+	}
+	return ret
+}
+
+func NullStringsPtrToInterfaces(ss []sql.NullString) []interface{} {
+	var ret = make([]interface{}, len(ss))
+	for i := range ss {
+		ret[i] = &ss[i]
+	}
+	return ret
+}
+
+func NullStringsPtrToStrings(ss []sql.NullString) []string {
+	var ret = make([]string, len(ss))
+	for i := range ss {
+		ret[i] = ss[i].String
 	}
 	return ret
 }

@@ -2,9 +2,6 @@ package medb
 
 import (
 	"database/sql"
-	"errors"
-	"log"
-	"reflect"
 )
 
 // Row 单行
@@ -24,17 +21,6 @@ func (r *Rows) Err() error {
 	return r.err
 }
 
-// ScanNext 组合scan和next
-func (r *Rows) ScanNext(dest ...interface{}) error {
-	if r.err != nil {
-		return r.err
-	}
-	for r.Next() {
-		r.Scan(dest...)
-	}
-	return r.Close()
-}
-
 func (r *Rows) ColumnsMap() (map[string]int, error) {
 	if r.columns == nil {
 		cols, err := r.Columns()
@@ -49,15 +35,53 @@ func (r *Rows) ColumnsMap() (map[string]int, error) {
 	return r.columns, nil
 }
 
+// ScanNext 组合scan和next
+func (r *Rows) ScanNext(dest ...interface{}) error {
+	if r.err != nil {
+		return r.err
+	}
+	defer r.Close()
+	if r.Next() {
+		err := r.Scan(dest...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ScanStrings 解析到字符串数组中
 func (r *Rows) ScanStrings() ([][]string, error) {
-	if r.err == nil {
-		colM, err := r.ColumnsMap()
-		if err != nil {
-			return nil, err
+	return r.scanStrings(true)
+}
+
+// ScanStrings 解析到字符串数组中,并且处理Null的情况
+func (r *Rows) ScanStrings2() ([][]string, error) {
+	return r.scanStrings(false)
+}
+
+// ScanStrings 解析到字符串数组中
+func (r *Rows) scanStrings(handleNull bool) ([][]string, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	colM, err := r.ColumnsMap()
+	if err != nil {
+		return nil, err
+	}
+	ret := make([][]string, 0)
+	defer r.Close()
+
+	if handleNull {
+		for r.Next() {
+			rd := make([]sql.NullString, len(colM))
+			err = r.Scan(NullStringsPtrToInterfaces(rd)...)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, NullStringsPtrToStrings(rd))
 		}
-		ret := make([][]string, 0)
-		defer r.Close()
+	} else {
 		for r.Next() {
 			rd := make([]string, len(colM))
 			err = r.Scan(StringsPtrToInterfaces(rd)...)
@@ -66,37 +90,77 @@ func (r *Rows) ScanStrings() ([][]string, error) {
 			}
 			ret = append(ret, rd)
 		}
-		return ret, nil
 	}
-	return nil, r.err
+	return ret, nil
 }
 
 // ScanStringsOne 解析到字符串数组中,但是最多解析一条
 func (r *Rows) ScanStringsOne() ([]string, error) {
-	if r.err == nil {
-		colM, err := r.ColumnsMap()
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
-		if r.Next() {
-			rd := make([]string, len(colM))
+	return r.scanStringsOne(true)
+}
+
+// ScanStringsOne2 解析到字符串数组中,但是最多解析一条
+func (r *Rows) ScanStringsOne2() ([]string, error) {
+	return r.scanStringsOne(false)
+}
+
+// scanStringsOne 解析到字符串数组中,但是最多解析一条
+func (r *Rows) scanStringsOne(handleNull bool) ([]string, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	colM, err := r.ColumnsMap()
+	if err != nil {
+		return nil, err
+	}
+	rd := make([]string, len(colM))
+	defer r.Close()
+	if r.Next() {
+		if handleNull {
+			nrd := make([]sql.NullString, len(colM))
+			err = r.Scan(NullStringsPtrToInterfaces(nrd)...)
+			rd = NullStringsPtrToStrings(nrd)
+		} else {
 			err = r.Scan(StringsPtrToInterfaces(rd)...)
-			return rd, err
 		}
 	}
-	return nil, r.err
+	return rd, err
 }
 
 // ScanMap 解析到map中
 func (r *Rows) ScanMap() (map[string][]string, error) {
-	if r.err == nil {
-		colM, err := r.ColumnsMap()
-		if err != nil {
-			return nil, err
+	return r.scanMap(true)
+}
+
+// ScanMap 解析到map中
+func (r *Rows) ScanMap2() (map[string][]string, error) {
+	return r.scanMap(false)
+}
+
+// scanMap 解析到map中
+func (r *Rows) scanMap(handleNull bool) (map[string][]string, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	colM, err := r.ColumnsMap()
+	if err != nil {
+		return nil, err
+	}
+	ret := make(map[string][]string)
+	defer r.Close()
+	if handleNull {
+		for r.Next() {
+
+			rd := make([]sql.NullString, len(colM))
+			err = r.Scan(NullStringsPtrToInterfaces(rd)...)
+			if err != nil {
+				return nil, err
+			}
+			for col, ind := range colM {
+				ret[col] = append(ret[col], rd[ind].String)
+			}
 		}
-		ret := make(map[string][]string)
-		defer r.Close()
+	} else {
 		for r.Next() {
 			rd := make([]string, len(colM))
 			err = r.Scan(StringsPtrToInterfaces(rd)...)
@@ -107,21 +171,43 @@ func (r *Rows) ScanMap() (map[string][]string, error) {
 				ret[col] = append(ret[col], rd[ind])
 			}
 		}
-		return ret, nil
 	}
-	return nil, r.err
+	return ret, nil
 }
 
 // ScanMapOne 解析到map中,但是最多解析一条
 func (r *Rows) ScanMapOne() (map[string]string, error) {
-	if r.err == nil {
-		colM, err := r.ColumnsMap()
-		if err != nil {
-			return nil, err
-		}
-		ret := make(map[string]string)
-		defer r.Close()
-		if r.Next() {
+	return r.scanMapOne(true)
+}
+
+// ScanMapOne 解析到map中,但是最多解析一条
+func (r *Rows) ScanMapOne2() (map[string]string, error) {
+	return r.scanMapOne(false)
+}
+
+// scanMapOne 解析到map中,但是最多解析一条
+func (r *Rows) scanMapOne(handleNull bool) (map[string]string, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+
+	colM, err := r.ColumnsMap()
+	if err != nil {
+		return nil, err
+	}
+	ret := make(map[string]string)
+	defer r.Close()
+	if r.Next() {
+		if handleNull {
+			rd := make([]sql.NullString, len(colM))
+			err = r.Scan(NullStringsPtrToInterfaces(rd)...)
+			if err != nil {
+				return nil, err
+			}
+			for col, ind := range colM {
+				ret[col] = rd[ind].String
+			}
+		} else {
 			rd := make([]string, len(colM))
 			err = r.Scan(StringsPtrToInterfaces(rd)...)
 			if err != nil {
@@ -131,220 +217,6 @@ func (r *Rows) ScanMapOne() (map[string]string, error) {
 				ret[col] = rd[ind]
 			}
 		}
-		return ret, nil
 	}
-	return nil, r.err
+	return ret, nil
 }
-
-// ScanTo 解析
-func (r *Rows) ScanTo(data interface{}) (int, error) {
-	if r.err == nil {
-		var d, err = newData(data) //	类型解析
-		if err != nil {
-			return 0, err
-		}
-		//	行解析，逐行解析rows的数据
-		for r.Next() && d.next() {
-			var v = d.newValue()
-			err = r.scan(v)
-			if err != nil {
-				return 0, err
-			}
-			d.setBack(v)
-		}
-		err = r.Close()
-		return d.length, nil
-	}
-	return 0, r.err
-}
-
-// parse 将fields转换成相应的类型并绑定到value上
-func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error {
-	switch value.Kind() {
-	case reflect.Bool:
-		var b = sql.NullBool{}
-		var err = b.Scan(*(fields[index].(*interface{})))
-		if err != nil {
-			return err
-		}
-		if b.Valid {
-			value.SetBool(b.Bool)
-		}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		var i = sql.NullInt64{}
-		var err = i.Scan(*(fields[index].(*interface{})))
-		if err != nil {
-			return err
-		}
-		if i.Valid {
-			value.SetInt(i.Int64)
-		}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		var i = sql.NullInt64{}
-		var err = i.Scan(*(fields[index].(*interface{})))
-		if err != nil {
-			return err
-		}
-		if i.Valid {
-			value.SetUint(uint64(i.Int64))
-		}
-	case reflect.Float32, reflect.Float64:
-		var f = sql.NullFloat64{}
-		var err = f.Scan(*(fields[index].(*interface{})))
-		if err != nil {
-			return err
-		}
-		if f.Valid {
-			value.SetFloat(f.Float64)
-		}
-	case reflect.String:
-		var s = sql.NullString{}
-		var err = s.Scan(*(fields[index].(*interface{})))
-		if err != nil {
-			return err
-		}
-		if s.Valid {
-			value.SetString(s.String)
-		}
-	case reflect.Struct:
-		{
-			log.Println(value.Type().String(), value.Type().Name())
-			if value.Type().String() == "time.Time" { //时间结构体解析
-				err := timeparse(&value, *(fields[index].(*interface{})))
-				if err != nil {
-					return err
-				}
-			} else { //常规结构体解析
-				for i := 0; i < value.NumField(); i++ {
-					var fieldValue = value.Field(i)
-					var fieldType = value.Type().Field(i)
-					if fieldType.Anonymous {
-						//匿名字段递归解析
-						r.parse(fieldValue, 0, fields)
-					} else {
-						//非匿名字段
-						if fieldValue.CanSet() {
-							var tagMap = ParseTag(fieldType.Tag.Get(MedbTag))
-							var fieldName = tagMap[MedbFieldName]
-							if fieldName == "_" {
-								continue
-							}
-							if fieldName == "" {
-								fieldName = SnakeName(fieldType.Name)
-							}
-							var index, ok = r.columns[fieldName]
-							if ok {
-								r.parse(fieldValue, index, fields)
-							}
-						}
-					}
-				}
-			}
-		}
-	case reflect.Ptr:
-		indValue := reflect.New(value.Type().Elem()).Elem()
-		err := r.parse(indValue, index, fields)
-		if err != nil {
-			return err
-		}
-		value.Set(indValue.Addr())
-	}
-	return nil
-}
-
-// scan 单行解析
-func (r *Rows) scan(v reflect.Value) error {
-	if r.columns == nil {
-		var cols, err = r.Columns()
-		if err != nil {
-			return err
-		}
-		r.columns = make(map[string]int, len(cols))
-		for i, col := range cols {
-			r.columns[col] = i
-		}
-	}
-	var fields = make([]interface{}, len(r.columns))
-	for i := 0; i < len(fields); i++ {
-		var pif interface{}
-		fields[i] = &pif
-	}
-	var err = r.Scan(fields...)
-	if err == nil {
-		err = r.parse(v, 0, fields)
-	}
-	return err
-}
-
-// data 解析目标的描述
-type data struct {
-	t        reflect.Type
-	v        reflect.Value
-	slice    bool
-	destType reflect.Type
-	length   int
-}
-
-// newData 生成一个data的描述
-//	t,v value的反射类型和反射值,如果是指针型则返回指向的类型、值
-//	slice 是否是切片类型
-//	destType 如果是切片类型，则指向切片元素所对应的类型
-// 	data must be kind of ptr
-func newData(value interface{}) (*data, error) {
-	var d = new(data)
-	d.t = reflect.TypeOf(value)
-	d.v = reflect.ValueOf(value)
-	if d.t.Kind() != reflect.Ptr {
-		return nil, errors.New("destination data must be kind of ptr")
-	}
-
-	d.t = d.t.Elem()
-	d.v = d.v.Elem()
-
-	switch d.t.Kind() {
-	case reflect.Slice:
-		d.slice = true
-		d.destType = d.t.Elem()
-	default:
-		d.destType = d.t
-	}
-	return d, nil
-}
-
-// next 能否继续获取
-func (r *data) next() bool {
-	if r.slice {
-		return true
-	}
-	return r.length < 1
-}
-
-// newValue 获取一个要生成的目标值的反射类型
-func (r *data) newValue() reflect.Value {
-	r.length++
-	if r.slice {
-		var v reflect.Value
-		if r.destType.Kind() == reflect.Ptr {
-			v = reflect.New(r.destType.Elem()).Elem()
-		} else {
-			v = reflect.New(r.destType).Elem()
-		}
-		return v
-	}
-	return r.v
-}
-
-// setBack 将newValue的值设置回data
-func (r *data) setBack(value reflect.Value) {
-	if r.slice {
-		var v = value
-		if r.destType.Kind() == reflect.Ptr {
-			v = v.Addr()
-		}
-		r.v.Set(reflect.Append(r.v, v))
-	} else {
-		r.v = value
-	}
-}
-
-//=============

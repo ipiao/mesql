@@ -92,10 +92,11 @@ func TestLogger(t *testing.T) {
 	// }
 
 	// u := User{}
-	am, err := db.Query("select * from user ").ScanMapOne()
+
+	ret, err := db.Query("select * from user ").ScanMapOne2()
 	if err != nil {
 		t.Fatal("register db err:", err)
 	}
-	t.Log(am)
+	t.Log(ret)
 
 }
