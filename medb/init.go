@@ -65,7 +65,7 @@ func ParseTag(tag string) map[string]string {
 			brr := strings.Split(a, ":")
 			res[brr[0]] = brr[1]
 		} else {
-			res[MedbFieldName] = a
+			res[a] = a
 		}
 	}
 	return res

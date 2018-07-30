@@ -3,6 +3,7 @@ package medb
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"reflect"
 )
 
@@ -84,6 +85,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Struct:
 		{
+			log.Println(value.Type().String(), value.Type().Name())
 			if value.Type().String() == "time.Time" { //时间结构体解析
 				err := timeparse(&value, *(fields[index].(*interface{})))
 				if err != nil {
@@ -116,6 +118,13 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 				}
 			}
 		}
+	case reflect.Ptr:
+		indValue := reflect.New(value.Type().Elem()).Elem()
+		err := r.parse(indValue, index, fields)
+		if err != nil {
+			return err
+		}
+		value.Set(indValue.Addr())
 	}
 	return nil
 }
@@ -125,15 +134,15 @@ func SnakeName(base string) string {
 	var r = make([]rune, 0, len(base))
 	var b = []rune(base)
 	for i := 0; i < len(b); i++ {
-		if i > 0 && b[i] >= 'A' && b[i] <= 'Z' {
-			r = append(r, '_', b[i]+32)
-			continue
+		if b[i] >= 'A' && b[i] <= 'Z' {
+			if i == 0 {
+				r = append(r, b[i]+32)
+			} else {
+				r = append(r, '_', b[i]+32)
+			}
+		} else {
+			r = append(r, b[i])
 		}
-		if i == 0 && b[i] >= 'A' && b[i] <= 'Z' {
-			r = append(r, b[i]+32)
-			continue
-		}
-		r = append(r, b[i])
 	}
 	return string(r)
 }

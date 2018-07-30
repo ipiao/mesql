@@ -82,11 +82,13 @@ func TestLogger(t *testing.T) {
 
 	medb.RegisterTimeParserFunc(datetool.ParseTime)
 
+	type Ager int
+
 	type User struct {
 		Id        int
 		Name      string
-		Age       int
-		CreatedAt time.Time
+		Age       int        `db:"col:age;"`
+		CreatedAt *time.Time `db:"col:created_at;json"`
 	}
 
 	u := User{}
