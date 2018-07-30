@@ -46,3 +46,13 @@ func (s *Stmt) QueryRow(params ...interface{}) *Row {
 	var row = s.Stmt.QueryRow(params...)
 	return &Row{row}
 }
+
+// Commit 提交
+func (s *Stmt) Commit() error {
+	return nil
+}
+
+// Rollback 回滚
+func (s *Stmt) Rollback() error {
+	return nil
+}

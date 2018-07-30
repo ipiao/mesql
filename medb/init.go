@@ -3,8 +3,11 @@ package medb
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/ipiao/metools/logger"
 )
 
 var (
@@ -12,19 +15,10 @@ var (
 	maxOpenConnNum = 30
 	maxIdleConnNum = 10
 	maxLifeTime    = time.Minute * 30
-	showSQL        = false
+	MedbTag        = "db"
+	MedbFieldName  = "col"
+	Logger         = melogger.New("medb") // exported
 )
-
-// 标签
-const (
-	MedbTag       = "db"
-	MedbFieldName = "col"
-)
-
-// ShowSQL 是否打印日志
-func ShowSQL(b bool) {
-	showSQL = b
-}
 
 // RegisterDB 注册数据库连接
 // name:给数据库连接的命名
@@ -56,4 +50,35 @@ func OpenDB(name string) *DB {
 		return db
 	}
 	return nil
+}
+
+func SetMedbTag(tag string) {
+	MedbTag = tag
+}
+
+func SetMedbFieldName(tag string) {
+	MedbFieldName = tag
+}
+
+// ParseTag 解析标签
+func ParseTag(tag string) map[string]string {
+	var res = make(map[string]string)
+	var arr = strings.Split(tag, ";")
+	for _, a := range arr {
+		if strings.Contains(a, ":") {
+			brr := strings.Split(a, ":")
+			res[brr[0]] = brr[1]
+		} else {
+			res[MedbFieldName] = a
+		}
+	}
+	return res
+}
+
+func logSQL(err error, sql string, args ...interface{}) {
+	if err != nil {
+		Logger.Errorf("SQL: %s, Args: %v", sql, args)
+	} else {
+		Logger.Debugf("SQL: %s, Args: %v", sql, args)
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"sync"
 )
 
 // DB 自定义DB
@@ -20,9 +19,6 @@ func (d *DB) Name() string {
 
 // MountDB 嵌入db
 func (d *DB) MountDB(db *sql.DB, name string) error {
-	var mu = new(sync.Mutex)
-	mu.Lock()
-	defer mu.Unlock()
 	if d.DB != nil {
 		return errors.New("db already has connection")
 	}
