@@ -15,9 +15,13 @@ var (
 	maxOpenConnNum = 30
 	maxIdleConnNum = 10
 	maxLifeTime    = time.Minute * 30
-	MedbTag        = "db"
-	MedbFieldName  = "col"
-	Logger         = melogger.New("medb") // exported
+)
+
+// exported
+var (
+	MedbTag       = "db"
+	MedbFieldName = "col"
+	Logger        = melogger.New("medb")
 )
 
 // RegisterDB 注册数据库连接
@@ -52,14 +56,6 @@ func OpenDB(name string) *DB {
 	return nil
 }
 
-func SetMedbTag(tag string) {
-	MedbTag = tag
-}
-
-func SetMedbFieldName(tag string) {
-	MedbFieldName = tag
-}
-
 // ParseTag 解析标签
 func ParseTag(tag string) map[string]string {
 	var res = make(map[string]string)
@@ -77,8 +73,8 @@ func ParseTag(tag string) map[string]string {
 
 func logSQL(err error, sql string, args ...interface{}) {
 	if err != nil {
-		Logger.Errorf("SQL: %s, Args: %v", sql, args)
+		Logger.Errorj(map[string]interface{}{"sql": sql, "args": args, "error": err})
 	} else {
-		Logger.Debugf("SQL: %s, Args: %v", sql, args)
+		Logger.Debugj(map[string]interface{}{"sql": sql, "args": args})
 	}
 }
