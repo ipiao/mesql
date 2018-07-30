@@ -5,150 +5,48 @@ package medb
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"log"
 	"reflect"
 )
 
-type field struct {
-	sf   *reflect.StructField
-	kind reflect.Kind
-}
-
-// 获取结构的元素
-func getDataFieldsMap(t reflect.Type) (map[string]*field, error) {
-	return nil, nil
-}
-
-// 创建数据类型解析的数组
-func makeDataScanSlice(t reflect.Type, cols []string) ([]interface{}, error) {
-	dfMap, err := getDataFieldsMap(t)
-	if err != nil {
-		return nil, err
-	}
-	ret := make([]interface{}, len(cols))
-	for _, col := range cols {
-		if df, ok := dfMap[col]; ok {
-			switch df.kind {
-			case reflect.Bool:
-				ret = append(ret, &sql.NullBool{})
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				ret = append(ret, &sql.NullInt64{})
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				ret = append(ret, &sql.NullInt64{})
-			case reflect.Float32, reflect.Float64:
-				ret = append(ret, &sql.NullFloat64{})
-			case reflect.String:
-				ret = append(ret, &sql.NullString{})
-			default:
-				return nil, fmt.Errorf("unsupported field kind %s", df.kind.String())
-			}
-		} else {
-			return nil, fmt.Errorf("can not find col %s", col)
-		}
-	}
-	return ret, nil
-}
-
-// // 返回去创建反射值
-// func makeDataValues(t reflect.Type, vals []interface{}, cols []string) (*reflect.Value, error) {
-// 	dfMap, err := getDataFieldsMap(t)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	for _, val := range vals {
-// 		for _, col := range cols {
-// 			if df, ok := dfMap[col]; ok {
-// 				switch df.kind {
-// 				case reflect.Bool:
-
-// 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-// 					ret = append(ret, &sql.NullInt64{})
-// 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-// 					ret = append(ret, &sql.NullInt64{})
-// 				case reflect.Float32, reflect.Float64:
-// 					ret = append(ret, &sql.NullFloat64{})
-// 				case reflect.String:
-// 					ret = append(ret, &sql.NullString{})
-// 				default:
-// 					return nil, fmt.Errorf("unsupported field kind %s", df.kind.String())
-// 				}
-// 			} else {
-// 				return nil, fmt.Errorf("can not find col %s", col)
-// 			}
-// 		}
-// 	}
-// }
-
-// ScanSlice 解析结构数组
-func (r *Rows) ScanSlice(data interface{}) (int, error) {
+// ScanTo 解析
+func (r *Rows) ScanTo(data interface{}) (int, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
-
-	v := reflect.Indirect(reflect.ValueOf(data))
-	if v.Kind() != reflect.Slice {
-		return 0, errors.New("not slice or ptr to slice")
+	var d, err = newData(data) //	类型解析
+	if err != nil {
+		return 0, err
 	}
-	// t := v.Elem().Type()  // 数组元素类型
-	et := v.Elem().Type() // 数组元素底层类型
-	if et.Kind() == reflect.Ptr {
-		et = et.Elem()
-	}
-
-	// // 获取到结构体的解析映射
-	// fieldsMap, err := getDataFieldsMap(et)
-	// if err != nil {
-	// 	return 0, err
-	// }
-
-	var cols []string
-	if r.columns == nil {
-		cols, err := r.Columns()
+	//行解析，逐行解析rows的数据
+	for r.Next() && d.next() {
+		var v = d.newValue()
+		err = r.scan(v)
 		if err != nil {
 			return 0, err
 		}
-		r.columns = make(map[string]int, len(cols))
-		for i, col := range cols {
-			r.columns[col] = i
-		}
+		d.setBack(v)
 	}
-
-	defer r.Close()
-	for r.Next() {
-		rd, err := makeDataScanSlice(et, cols)
-		if err != nil {
-			return 0, err
-		}
-		err = r.Scan(rd...)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	return 0, nil
+	err = r.Close()
+	return d.length, err
 }
 
-// ScanTo 解析
-func (r *Rows) ScanTo(data interface{}) (int, error) {
-	if r.err == nil {
-		var d, err = newData(data) //	类型解析
-		if err != nil {
-			return 0, err
-		}
-		//	行解析，逐行解析rows的数据
-		for r.Next() && d.next() {
-			var v = d.newValue()
-			err = r.scan(v)
-			if err != nil {
-				return 0, err
-			}
-			d.setBack(v)
-		}
-		err = r.Close()
-		return d.length, nil
+// scan 单行解析
+func (r *Rows) scan(v reflect.Value) error {
+	colM, err := r.ColumnsMap()
+
+	if err != nil {
+		return err
 	}
-	return 0, r.err
+	var fields = make([]interface{}, len(colM))
+	for i := 0; i < len(fields); i++ {
+		var pif interface{}
+		fields[i] = &pif
+	}
+	err = r.Scan(fields...)
+	if err == nil {
+		err = r.parse(v, 0, fields)
+	}
+	return err
 }
 
 // parse 将fields转换成相应的类型并绑定到value上
@@ -201,7 +99,6 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Struct:
 		{
-			log.Println(value.Type().String(), value.Type().Name())
 			if value.Type().String() == "time.Time" { //时间结构体解析
 				err := timeparse(&value, *(fields[index].(*interface{})))
 				if err != nil {
@@ -245,37 +142,13 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 	return nil
 }
 
-// scan 单行解析
-func (r *Rows) scan(v reflect.Value) error {
-	if r.columns == nil {
-		var cols, err = r.Columns()
-		if err != nil {
-			return err
-		}
-		r.columns = make(map[string]int, len(cols))
-		for i, col := range cols {
-			r.columns[col] = i
-		}
-	}
-	var fields = make([]interface{}, len(r.columns))
-	for i := 0; i < len(fields); i++ {
-		var pif interface{}
-		fields[i] = &pif
-	}
-	var err = r.Scan(fields...)
-	if err == nil {
-		err = r.parse(v, 0, fields)
-	}
-	return err
-}
-
-// data 解析目标的描述
-type data struct {
-	t        reflect.Type
-	v        reflect.Value
-	slice    bool
-	destType reflect.Type
-	length   int
+// metadata 解析目标的描述
+type metadata struct {
+	t        reflect.Type  // 原始类型
+	v        reflect.Value // 原始值
+	slice    bool          // 是否是数组
+	destType reflect.Type  // 元素类型
+	length   int           // 迭代长度
 }
 
 // newData 生成一个data的描述
@@ -283,10 +156,11 @@ type data struct {
 //	slice 是否是切片类型
 //	destType 如果是切片类型，则指向切片元素所对应的类型
 // 	data must be kind of ptr
-func newData(value interface{}) (*data, error) {
-	var d = new(data)
+func newData(value interface{}) (*metadata, error) {
+	var d = new(metadata)
 	d.t = reflect.TypeOf(value)
 	d.v = reflect.ValueOf(value)
+
 	if d.t.Kind() != reflect.Ptr {
 		return nil, errors.New("destination data must be kind of ptr")
 	}
@@ -305,7 +179,7 @@ func newData(value interface{}) (*data, error) {
 }
 
 // next 能否继续获取
-func (r *data) next() bool {
+func (r *metadata) next() bool {
 	if r.slice {
 		return true
 	}
@@ -313,7 +187,7 @@ func (r *data) next() bool {
 }
 
 // newValue 获取一个要生成的目标值的反射类型
-func (r *data) newValue() reflect.Value {
+func (r *metadata) newValue() reflect.Value {
 	r.length++
 	if r.slice {
 		var v reflect.Value
@@ -328,7 +202,7 @@ func (r *data) newValue() reflect.Value {
 }
 
 // setBack 将newValue的值设置回data
-func (r *data) setBack(value reflect.Value) {
+func (r *metadata) setBack(value reflect.Value) {
 	if r.slice {
 		var v = value
 		if r.destType.Kind() == reflect.Ptr {
@@ -339,5 +213,3 @@ func (r *data) setBack(value reflect.Value) {
 		r.v = value
 	}
 }
-
-//=============

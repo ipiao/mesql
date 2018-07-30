@@ -84,19 +84,20 @@ func TestLogger(t *testing.T) {
 
 	// type Ager int
 
-	// type User struct {
-	// 	Id        int
-	// 	Name      string
-	// 	Age       int        `db:"col:age;"`
-	// 	CreatedAt *time.Time `db:"col:created_at;json"`
-	// }
+	type User struct {
+		Id        int
+		Name      string
+		Age       int        `db:"col:age;"`
+		CreatedAt *time.Time `db:"col:created_at;json"`
+	}
 
-	// u := User{}
+	u := []User{}
 
-	ret, err := db.Query("select * from user ").ScanMapOne2()
+	ret, err := db.Query("select * from user ").ScanTo(&u)
 	if err != nil {
 		t.Fatal("register db err:", err)
 	}
 	t.Log(ret)
+	t.Log(u)
 
 }
