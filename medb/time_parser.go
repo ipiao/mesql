@@ -19,9 +19,6 @@ func defaultTimeParser(value *reflect.Value, field interface{}) error {
 	}
 	if s.Valid {
 		t, err := time.ParseInLocation("2006-01-02 15:04:05", s.String, time.Local)
-		if err != nil {
-			t, err = time.ParseInLocation("2006-01-02", s.String, time.Local)
-		}
 		if err == nil {
 			value.Set(reflect.ValueOf(t))
 		}
@@ -35,4 +32,21 @@ var timeparse TimeParser = defaultTimeParser
 // RegisterTimeParser 注册时间解析器
 func RegisterTimeParser(timefun TimeParser) {
 	timeparse = timefun
+}
+
+// RegisterTimeParser 注册时间解析器
+func RegisterTimeParserFunc(fn func(string) (time.Time, error)) {
+	timeparse = func(value *reflect.Value, field interface{}) error {
+		var err error
+		var s = sql.NullString{}
+		err = s.Scan(field)
+		if err == nil && s.Valid {
+			t, err1 := fn(s.String)
+			if err1 != nil {
+				return err1
+			}
+			value.Set(reflect.ValueOf(t))
+		}
+		return err
+	}
 }

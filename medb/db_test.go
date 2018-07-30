@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ipiao/mesql/medb"
+	"github.com/ipiao/metools/datetool"
 )
 
 func TestDB(t *testing.T) {
@@ -78,6 +79,9 @@ func TestLogger(t *testing.T) {
 	// medb.Logger.Skip(3)
 	medb.Logger.Skip(5)
 	medb.Logger.SetLevel(4)
+
+	medb.RegisterTimeParserFunc(datetool.ParseTime)
+
 	type User struct {
 		Id        int
 		Name      string
