@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
-
-	"github.com/ipiao/metools/mutils"
 )
 
 // Rows 数据行
@@ -107,7 +105,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 								continue
 							}
 							if fieldName == "" {
-								fieldName = mutils.SnakeName(fieldType.Name)
+								fieldName = SnakeName(fieldType.Name)
 							}
 							var index, ok = r.columns[fieldName]
 							if ok {
@@ -120,6 +118,24 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	}
 	return nil
+}
+
+// SnakeName 驼峰转蛇形
+func SnakeName(base string) string {
+	var r = make([]rune, 0, len(base))
+	var b = []rune(base)
+	for i := 0; i < len(b); i++ {
+		if i > 0 && b[i] >= 'A' && b[i] <= 'Z' {
+			r = append(r, '_', b[i]+32)
+			continue
+		}
+		if i == 0 && b[i] >= 'A' && b[i] <= 'Z' {
+			r = append(r, b[i]+32)
+			continue
+		}
+		r = append(r, b[i])
+	}
+	return string(r)
 }
 
 // scan 单行解析
