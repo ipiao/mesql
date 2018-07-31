@@ -21,10 +21,10 @@ type DBPoolConfig struct {
 	Uri             string
 	Type            string //
 	Size            int
-	GetDBTimeOut    time.Duration
 	DriverName      string
 	Monitor         bool // 监视
 	MonitorInterval time.Duration
+	GetDBTimeOut    time.Duration
 }
 
 const (
@@ -54,7 +54,7 @@ func (c *DBPoolConfig) SetDefault() {
 		c.Database = "test"
 	}
 	if len(c.Type) == 0 {
-		c.Type = "default"
+		c.Type = DBTypeDefault
 	}
 	if len(c.DriverName) == 0 {
 		c.DriverName = "mysql"
