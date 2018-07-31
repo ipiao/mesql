@@ -69,11 +69,19 @@ func ParseTag(tag string) map[string]string {
 			brr := strings.Split(a, ":")
 			res[brr[0]] = brr[1]
 		} else {
-			res[a] = a
+			res[a] = ""
 		}
 	}
-	if len(res) == 1 && res[MedbFieldIgnore] == MedbFieldIgnore {
-		res[MedbFieldName] = MedbFieldIgnore
+	if len(res) == 1 {
+		if _, ok := res[MedbFieldIgnore]; ok {
+			res[MedbFieldName] = MedbFieldIgnore
+		} else {
+			for t, v := range res {
+				if v == "" {
+					res[MedbFieldName] = t
+				}
+			}
+		}
 	}
 	return res
 }
