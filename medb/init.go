@@ -17,11 +17,14 @@ var (
 	maxLifeTime    = time.Minute * 30
 )
 
-// exported
+// exported for changing supported
 var (
-	MedbTag       = "db"
-	MedbFieldName = "col"
-	Logger        = melogger.New("medb")
+	MedbTag           = "db"        // medb 标签字段
+	MedbFieldName     = "col"       // 标签解析映射后，col对应字段名
+	MedbFieldIgnore   = "_"         // "_" not "-"
+	MedbFieldCp       = "cp"        // custome parse 字段自定义解析标签
+	MedbFieldCpMethod = "MedbParse" // custome parse 字段自定义解析方法名
+	Logger            = melogger.New("medb")
 )
 
 // RegisterDB 注册数据库连接
@@ -57,9 +60,10 @@ func OpenDB(name string) *DB {
 }
 
 // ParseTag 解析标签
+// TODO mem cached
 func ParseTag(tag string) map[string]string {
 	var res = make(map[string]string)
-	var arr = strings.Split(tag, ";")
+	var arr = strings.Split(tag, ",")
 	for _, a := range arr {
 		if strings.Contains(a, ":") {
 			brr := strings.Split(a, ":")
@@ -67,6 +71,9 @@ func ParseTag(tag string) map[string]string {
 		} else {
 			res[a] = a
 		}
+	}
+	if len(res) == 1 && res[MedbFieldIgnore] == MedbFieldIgnore {
+		res[MedbFieldName] = MedbFieldIgnore
 	}
 	return res
 }

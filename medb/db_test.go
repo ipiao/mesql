@@ -68,7 +68,7 @@ func TestScan(t *testing.T) {
 	}
 }
 
-func TestLogger(t *testing.T) {
+func TestScanXXX(t *testing.T) {
 	err := medb.RegisterDB("test", "mysql", "root:yukktop001@tcp(118.25.7.38:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
 	if err != nil {
 		t.Fatal("register db err:", err)
@@ -88,14 +88,58 @@ func TestLogger(t *testing.T) {
 		Id        int
 		Name      string
 		Age       int        `db:"col:age;"`
-		CreatedAt *time.Time `db:"col:created_at;json"`
+		CreatedAt *time.Time `db:"col:created_at;"`
 	}
 
 	u := []User{}
 
 	ret, err := db.Query("select * from user ").ScanTo(&u)
 	if err != nil {
+		t.Fatal("query db err:", err)
+	}
+	t.Log(ret)
+	t.Log(u)
+
+}
+
+type Time time.Time
+
+func (t Time) MedbParse(s string) *Time {
+	tim, _ := datetool.ParseTime(s)
+	t = Time(tim)
+	return &t
+}
+
+func (t *Time) String() string {
+	return time.Time(*t).Format("2006-01-02 15:04:05")
+}
+
+func TestScanCp(t *testing.T) {
+	err := medb.RegisterDB("test", "mysql", "root:yukktop001@tcp(118.25.7.38:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
+	if err != nil {
 		t.Fatal("register db err:", err)
+	}
+	db := medb.OpenDB("test")
+	defer db.Close()
+
+	medb.Logger.Skip(5)
+	// medb.Logger.Skip(5)
+	medb.Logger.SetLevel(1)
+
+	medb.RegisterTimeParserFunc(datetool.ParseTime)
+
+	type User struct {
+		Id        int
+		Name      string
+		Age       int  `db:"_"`
+		CreatedAt Time `db:"col:created_at,cp"`
+	}
+
+	u := []User{}
+
+	ret, err := db.Query("select * from user ").ScanTo(&u)
+	if err != nil {
+		t.Fatal("query db err:", err)
 	}
 	t.Log(ret)
 	t.Log(u)

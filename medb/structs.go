@@ -1,6 +1,6 @@
 package medb
 
-// 专门处理查询结果与structs的关系
+// 处理查询结果与structs的关系
 
 import (
 	"database/sql"
@@ -37,24 +37,24 @@ func (r *Rows) scan(v reflect.Value) error {
 	if err != nil {
 		return err
 	}
-	var fields = make([]interface{}, len(colM))
-	for i := 0; i < len(fields); i++ {
+	var rd = make([]interface{}, len(colM))
+	for i := 0; i < len(rd); i++ {
 		var pif interface{}
-		fields[i] = &pif
+		rd[i] = &pif
 	}
-	err = r.Scan(fields...)
+	err = r.Scan(rd...)
 	if err == nil {
-		err = r.parse(v, 0, fields)
+		err = r.parse(v, 0, rd)
 	}
 	return err
 }
 
 // parse 将fields转换成相应的类型并绑定到value上
-func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error {
+func (r *Rows) parse(value reflect.Value, index int, rd []interface{}) error {
 	switch value.Kind() {
 	case reflect.Bool:
 		var b = sql.NullBool{}
-		var err = b.Scan(*(fields[index].(*interface{})))
+		var err = b.Scan(*(rd[index].(*interface{})))
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		var i = sql.NullInt64{}
-		var err = i.Scan(*(fields[index].(*interface{})))
+		var err = i.Scan(*(rd[index].(*interface{})))
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		var i = sql.NullInt64{}
-		var err = i.Scan(*(fields[index].(*interface{})))
+		var err = i.Scan(*(rd[index].(*interface{})))
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Float32, reflect.Float64:
 		var f = sql.NullFloat64{}
-		var err = f.Scan(*(fields[index].(*interface{})))
+		var err = f.Scan(*(rd[index].(*interface{})))
 		if err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.String:
 		var s = sql.NullString{}
-		var err = s.Scan(*(fields[index].(*interface{})))
+		var err = s.Scan(*(rd[index].(*interface{})))
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 	case reflect.Struct:
 		{
 			if value.Type().String() == "time.Time" { //时间结构体解析
-				err := timeparse(&value, *(fields[index].(*interface{})))
+				err := timeparse(&value, *(rd[index].(*interface{})))
 				if err != nil {
 					return err
 				}
@@ -110,21 +110,41 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 					var fieldType = value.Type().Field(i)
 					if fieldType.Anonymous {
 						//匿名字段递归解析
-						r.parse(fieldValue, 0, fields)
+						r.parse(fieldValue, 0, rd)
 					} else {
 						//非匿名字段
-						if fieldValue.CanSet() {
+						if fieldValue.CanSet() { // && fieldValue.CanAddr()
 							var tagMap = ParseTag(fieldType.Tag.Get(MedbTag))
 							var fieldName = tagMap[MedbFieldName]
-							if fieldName == "_" {
+							if fieldName == MedbFieldIgnore {
 								continue
 							}
 							if fieldName == "" {
 								fieldName = SnakeName(fieldType.Name)
 							}
-							var index, ok = r.columns[fieldName]
+							var ind, ok = r.columns[fieldName]
 							if ok {
-								r.parse(fieldValue, index, fields)
+								// 自定义db字段解析
+								if _, ok2 := tagMap[MedbFieldCp]; ok2 {
+									fvaddr := fieldValue.Addr()
+									if mtd, has := fvaddr.Type().MethodByName(MedbFieldCpMethod); has {
+										var s = sql.NullString{}
+										var err = s.Scan(*(rd[ind].(*interface{})))
+										if err != nil {
+											return err
+										}
+										ret := mtd.Func.Call([]reflect.Value{fvaddr, reflect.ValueOf(s.String)})
+										if len(ret) > 0 {
+											if ret[0].Kind() == reflect.Ptr {
+												fieldValue.Set(ret[0].Elem())
+											} else {
+												fieldValue.Set(ret[0])
+											}
+										}
+									}
+								} else {
+									r.parse(fieldValue, ind, rd)
+								}
 							}
 						}
 					}
@@ -133,7 +153,7 @@ func (r *Rows) parse(value reflect.Value, index int, fields []interface{}) error
 		}
 	case reflect.Ptr:
 		indValue := reflect.New(value.Type().Elem()).Elem()
-		err := r.parse(indValue, index, fields)
+		err := r.parse(indValue, index, rd)
 		if err != nil {
 			return err
 		}
