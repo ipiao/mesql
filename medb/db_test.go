@@ -69,7 +69,7 @@ func TestScan(t *testing.T) {
 }
 
 func TestScanXXX(t *testing.T) {
-	err := medb.RegisterDB("test", "mysql", "root:yukktop001@tcp(118.25.7.38:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
+	err := medb.RegisterDB("test", "mysql", "root:@tcp(127.0.0.1:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
 	if err != nil {
 		t.Fatal("register db err:", err)
 	}
@@ -115,7 +115,7 @@ func (t *Time) String() string {
 }
 
 func TestScanCp(t *testing.T) {
-	err := medb.RegisterDB("test", "mysql", "root:yukktop001@tcp(118.25.7.38:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
+	err := medb.RegisterDB("test", "mysql", "root:@tcp(127.0.0.1:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
 	if err != nil {
 		t.Fatal("register db err:", err)
 	}
