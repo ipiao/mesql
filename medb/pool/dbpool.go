@@ -27,12 +27,6 @@ type DBPoolConfig struct {
 	GetDBTimeOut    time.Duration
 }
 
-const (
-	DBTypeDefault = "default"
-	DBTypeMaster  = "master"
-	DBTypeSlaver  = "slave"
-)
-
 // SetDefault 设置默认值
 func (c *DBPoolConfig) SetDefault() {
 	if len(c.User) == 0 {
@@ -54,7 +48,7 @@ func (c *DBPoolConfig) SetDefault() {
 		c.Database = "test"
 	}
 	if len(c.Type) == 0 {
-		c.Type = DBTypeDefault
+		c.Type = "default"
 	}
 	if len(c.DriverName) == 0 {
 		c.DriverName = "mysql"
@@ -108,7 +102,7 @@ func (p *DBPool) PutDB(db *medb.DB) {
 }
 
 func (p *DBPool) CreateNewDB(i int) (err error) {
-	name := RandomDBName(i)
+	name := randomDBName(i)
 	err = medb.RegisterDB(name, p.Config.DriverName, p.Config.Uri)
 	if err != nil {
 		return
@@ -122,22 +116,22 @@ func NewDBPool(c *DBPoolConfig) (pool *DBPool, err error) {
 	c.SetDefault()
 	pool = &DBPool{Config: c, dbs: make(chan *medb.DB, c.Size)}
 	for i := 0; i < c.Size; i++ {
-		name := RandomDBName(i)
+		name := randomDBName(i)
 		err = medb.RegisterDB(name, "mysql", c.Uri)
 		if err != nil {
 			return
 		}
 		pool.PutDB(medb.OpenDB(name))
 	}
-	pool.RunMonitor()
+	pool.runMonitor()
 	return
 }
 
-func RandomDBName(i int) string {
+func randomDBName(i int) string {
 	return fmt.Sprintf("%d_%d", time.Now().UnixNano(), i)
 }
 
-func (p *DBPool) RunMonitor() {
+func (p *DBPool) runMonitor() {
 	if p.Config.Monitor {
 		go func() {
 			ticker := time.NewTicker(p.Config.MonitorInterval)
