@@ -89,3 +89,12 @@ func (t Time) MedbParse(s string) {
 
 #### Executor 执行器
 这是一个接口，`db`，`tx`，`stmt`都实现了这个接口，在orm中可以方便调用
+
+
+#### DBPool 和 DBManager
+连接池和连接管理器
+
+- DBPool 实现单库的池管理
+- DBManager 实现多库的连接管理，用作主从，分库?
+- TODO: 获取db的自动归还
+

@@ -12,7 +12,7 @@ import (
 func TestSetDefault(t *testing.T) {
 	conf := new(DBPoolConfig)
 	conf.Host = "118.25.7.38"
-	conf.Password = "yukktop001"
+	conf.Password = "justfortest"
 	conf.SetDefault()
 	conf.GetDBTimeOut = 0
 	conf.MonitorInterval = time.Second * 2

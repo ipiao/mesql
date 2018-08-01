@@ -27,11 +27,13 @@ type DBManager struct {
 	masters  map[string]*DBPool
 	slaves   map[string]*DBPool
 	conf     *DBManagerConfig
+	putDBs   map[string]*DBPool
 }
 
 // 创建一个连接管理器
 func NewDBManger(cfs []*DBPoolConfig) (m *DBManager, err error) {
 	m = new(DBManager)
+	m.putDBs = make(map[string]*DBPool)
 	m.SetSelector(defaultSelector)
 	conf := &DBManagerConfig{
 		masters: make([]*DBPoolConfig, 0),
@@ -107,7 +109,14 @@ func (m *DBManager) GetMasterPool(sels ...Selector) *DBPool {
 
 func (m *DBManager) GetMasterDB(sels ...Selector) (*medb.DB, error) {
 	pool := m.GetMasterPool(sels...)
-	return pool.GetDB()
+	db, err := pool.GetDB()
+	if err != nil {
+		return nil, err
+	}
+	if m.putDBs[db.Name()] == nil {
+		m.putDBs[db.Name()] = pool
+	}
+	return db, nil
 }
 
 func (m *DBManager) GetSlavePool(sels ...Selector) *DBPool {
@@ -122,5 +131,20 @@ func (m *DBManager) GetSlavePool(sels ...Selector) *DBPool {
 
 func (m *DBManager) GetSlaveDB(sels ...Selector) (*medb.DB, error) {
 	pool := m.GetSlavePool(sels...)
-	return pool.GetDB()
+	db, err := pool.GetDB()
+	if err != nil {
+		return nil, err
+	}
+	if m.putDBs[db.Name()] == nil {
+		m.putDBs[db.Name()] = pool
+	}
+	return db, nil
+}
+
+func (m *DBManager) PutDB(db *medb.DB) error {
+	if pool, ok := m.putDBs[db.Name()]; ok {
+		pool.PutDB(db)
+		return nil
+	}
+	return fmt.Errorf("unkonwn db %s", db.Name())
 }
