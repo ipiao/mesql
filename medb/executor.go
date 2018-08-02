@@ -6,9 +6,12 @@ import (
 
 // Executor 执行器
 type Executor interface {
+	Exec(sql string, args ...interface{}) *Result
 	ExecContext(ctx context.Context, sql string, args ...interface{}) *Result
+	Query(sql string, args ...interface{}) *Rows
 	QueryContext(ctx context.Context, sql string, args ...interface{}) *Rows
-	PrepareContext(ctx context.Context, sql string) Executor
+	Prepare(sql string) *Stmt
+	PrepareContext(ctx context.Context, sql string) *Stmt
 	Commit() error
 	Rollback() error
 }

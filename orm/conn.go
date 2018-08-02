@@ -14,7 +14,7 @@ var (
 	mutex   = new(sync.Mutex)
 )
 
-const (
+var (
 	ormTag            = "db"
 	ormFieldSelectTag = medb.MedbFieldName
 )
@@ -24,11 +24,6 @@ const (
 type Conn struct {
 	*medb.DB
 	dialect dialect.Dialect
-}
-
-// ShowSQL 打印日志
-func ShowSQL(b bool) {
-	medb.ShowSQL(b)
 }
 
 // MountConnection 直接移植已有数据连接

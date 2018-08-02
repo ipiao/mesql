@@ -16,7 +16,6 @@ func (comm *CommonBuilder) AppendSQL(sql string, args ...interface{}) *CommonBui
 	return comm
 }
 
-
 // Exec 查询不建议使用
 func (comm *CommonBuilder) Exec() *medb.Result {
 	return comm.builder.Exec(comm)
