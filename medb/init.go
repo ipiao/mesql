@@ -3,7 +3,6 @@ package medb
 import (
 	"database/sql"
 	"errors"
-	"strings"
 	"sync"
 	"time"
 
@@ -57,33 +56,6 @@ func OpenDB(name string) *DB {
 		return db
 	}
 	return nil
-}
-
-// ParseTag 解析标签
-// TODO mem cached
-func ParseTag(tag string) map[string]string {
-	var res = make(map[string]string)
-	var arr = strings.Split(tag, ",")
-	for _, a := range arr {
-		if strings.Contains(a, ":") {
-			brr := strings.Split(a, ":")
-			res[brr[0]] = brr[1]
-		} else {
-			res[a] = ""
-		}
-	}
-	if len(res) == 1 {
-		if _, ok := res[MedbFieldIgnore]; ok {
-			res[MedbFieldName] = MedbFieldIgnore
-		} else {
-			for t, v := range res {
-				if v == "" {
-					res[MedbFieldName] = t
-				}
-			}
-		}
-	}
-	return res
 }
 
 func logSQL(err error, sql string, args ...interface{}) {

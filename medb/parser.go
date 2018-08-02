@@ -5,8 +5,39 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
+	"strings"
 	"time"
 )
+
+// ParseTag 解析标签
+// TODO mem cached
+func ParseTag(tag string) map[string]string {
+	var res = make(map[string]string)
+	if tag == "" {
+		return res
+	}
+	var arr = strings.Split(tag, ",")
+	for _, a := range arr {
+		if strings.Contains(a, ":") {
+			brr := strings.Split(a, ":")
+			res[brr[0]] = brr[1]
+		} else {
+			res[a] = ""
+		}
+	}
+	if len(res) == 1 {
+		if _, ok := res[MedbFieldIgnore]; ok {
+			res[MedbFieldName] = MedbFieldIgnore
+		} else {
+			for t, v := range res {
+				if v == "" {
+					res[MedbFieldName] = t
+				}
+			}
+		}
+	}
+	return res
+}
 
 // TimeParser parse time data to time.Time
 type TimeParser func(*reflect.Value, interface{}) error

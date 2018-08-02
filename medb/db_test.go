@@ -85,10 +85,10 @@ func TestScanXXX(t *testing.T) {
 	// type Ager int
 
 	type User struct {
-		Id        int
-		Name      string
-		Age       int        `db:"col:age;"`
-		CreatedAt *time.Time `db:"col:created_at;"`
+		Id       int
+		Name     string
+		Age      int        `db:"col:age;"`
+		CreateAt *time.Time `db:"col:created_at;"`
 	}
 
 	u := []User{}
@@ -104,10 +104,9 @@ func TestScanXXX(t *testing.T) {
 
 type Time time.Time
 
-func (t Time) MedbParse(s string) *Time {
+func (t *Time) MedbParse(s string) {
 	tim, _ := datetool.ParseTime(s)
-	t = Time(tim)
-	return &t
+	*t = Time(tim)
 }
 
 func (t *Time) String() string {
@@ -115,7 +114,7 @@ func (t *Time) String() string {
 }
 
 func TestScanCp(t *testing.T) {
-	err := medb.RegisterDB("test", "mysql", "root:@tcp(127.0.0.1:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
+	err := medb.RegisterDB("test", "mysql", "root:justfortest@tcp(118.25.7.38:3306)/test?charset=utf8mb4&loc=Asia%2fShanghai")
 	if err != nil {
 		t.Fatal("register db err:", err)
 	}
@@ -129,10 +128,10 @@ func TestScanCp(t *testing.T) {
 	medb.RegisterTimeParserFunc(datetool.ParseTime)
 
 	type User struct {
-		Id        int
-		Name      string
-		Age       int  `db:"_"`
-		CreatedAt Time `db:"col:created_at,cp"`
+		Id       int    `db:"id"`
+		Name     string `db:"name"`
+		Age      int    `db:"age"`
+		CreateAt Time   `db:"col:create_at,cp"`
 	}
 
 	u := []User{}

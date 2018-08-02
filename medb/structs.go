@@ -5,6 +5,7 @@ package medb
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -141,6 +142,8 @@ func (r *Rows) parse(value reflect.Value, index int, rd []interface{}) error {
 												fieldValue.Set(ret[0])
 											}
 										}
+									} else {
+										return fmt.Errorf("doesn't have cp method")
 									}
 								} else {
 									r.parse(fieldValue, ind, rd)
