@@ -102,7 +102,7 @@ func (p *DBPool) PutDB(db *medb.DB) {
 }
 
 func (p *DBPool) CreateNewDB(i int) (err error) {
-	name := randomDBName(i)
+	name := randomDBName(p.Config.Database, i)
 	err = medb.RegisterDB(name, p.Config.DriverName, p.Config.Uri)
 	if err != nil {
 		return
@@ -116,8 +116,8 @@ func NewDBPool(c *DBPoolConfig) (pool *DBPool, err error) {
 	c.SetDefault()
 	pool = &DBPool{Config: c, dbs: make(chan *medb.DB, c.Size)}
 	for i := 0; i < c.Size; i++ {
-		name := randomDBName(i)
-		err = medb.RegisterDB(name, "mysql", c.Uri)
+		name := randomDBName(c.Database, i)
+		err = medb.RegisterDB(name, c.DriverName, c.Uri)
 		if err != nil {
 			return
 		}
@@ -127,8 +127,8 @@ func NewDBPool(c *DBPoolConfig) (pool *DBPool, err error) {
 	return
 }
 
-func randomDBName(i int) string {
-	return fmt.Sprintf("%d_%d", time.Now().UnixNano(), i)
+func randomDBName(prefix string, i int) string {
+	return fmt.Sprintf("%s_%d_%d", prefix, time.Now().UnixNano(), i)
 }
 
 func (p *DBPool) runMonitor() {
