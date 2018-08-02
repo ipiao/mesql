@@ -16,8 +16,8 @@ const (
 
 // 主要是分库，主从
 type DBManagerConfig struct {
-	masters []*DBPoolConfig
-	slaves  []*DBPoolConfig
+	Masters []*DBPoolConfig
+	Slaves  []*DBPoolConfig
 }
 
 // 连接池，针对的是同一个业务模块
@@ -36,35 +36,35 @@ func NewDBManger(cfs []*DBPoolConfig) (m *DBManager, err error) {
 	m.putDBs = make(map[string]*DBPool)
 	m.SetSelector(defaultSelector)
 	conf := &DBManagerConfig{
-		masters: make([]*DBPoolConfig, 0),
-		slaves:  make([]*DBPoolConfig, 0),
+		Masters: make([]*DBPoolConfig, 0),
+		Slaves:  make([]*DBPoolConfig, 0),
 	}
 	for _, c := range cfs {
 		if c.Type == DBTypeMaster {
 			if c.Size == 0 {
 				c.Size = 1 // 主库的连接池大小默认设置1
 			}
-			conf.masters = append(conf.masters, c)
+			conf.Masters = append(conf.Masters, c)
 		} else if c.Type == DBTypeSlave {
-			conf.slaves = append(conf.slaves, c)
+			conf.Slaves = append(conf.Slaves, c)
 		} else {
 			err = fmt.Errorf("wrong type of db:%s", c.Type)
 			return
 		}
 	}
 	m.conf = conf
-	err = m.connect()
+	err = m.Connect()
 	return
 }
 
 // 自连接
-func (m *DBManager) connect() error {
+func (m *DBManager) Connect() error {
 	if m.conf == nil {
 		return errors.New("config can not be empty")
 	}
-	if len(m.masters) < len(m.conf.masters) {
+	if len(m.masters) < len(m.conf.Masters) {
 		m.masters = make(map[string]*DBPool)
-		for _, c := range m.conf.masters {
+		for _, c := range m.conf.Masters {
 			pool, err := NewDBPool(c)
 			if err != nil {
 				return err
@@ -73,9 +73,9 @@ func (m *DBManager) connect() error {
 		}
 	}
 
-	if len(m.slaves) < len(m.conf.slaves) {
+	if len(m.slaves) < len(m.conf.Slaves) {
 		m.slaves = make(map[string]*DBPool)
-		for _, c := range m.conf.slaves {
+		for _, c := range m.conf.Slaves {
 			pool, err := NewDBPool(c)
 			if err != nil {
 				return err
@@ -102,8 +102,8 @@ func (m *DBManager) GetMasterPool(sels ...Selector) *DBPool {
 	if len(sels) > 0 {
 		sel = sels[0]
 	}
-	i := sel(m.conf.masters)
-	dbName := m.conf.masters[i].Database
+	i := sel(m.conf.Masters)
+	dbName := m.conf.Masters[i].Database
 	return m.masters[dbName]
 }
 
@@ -124,8 +124,8 @@ func (m *DBManager) GetSlavePool(sels ...Selector) *DBPool {
 	if len(sels) > 0 {
 		sel = sels[0]
 	}
-	i := sel(m.conf.slaves)
-	dbName := m.conf.slaves[i].Database
+	i := sel(m.conf.Slaves)
+	dbName := m.conf.Slaves[i].Database
 	return m.slaves[dbName]
 }
 
