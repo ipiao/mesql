@@ -17,6 +17,7 @@ var (
 )
 
 // exported for changing supported
+// 全局一把梭，不搞事情
 var (
 	MedbTag           = "db"        // medb 标签字段
 	MedbFieldName     = "col"       // 标签解析映射后，col对应字段名
