@@ -8,6 +8,14 @@ import (
 	"github.com/ipiao/mesql/medb"
 )
 
+type LockType int
+
+const (
+	LockDefault LockType = iota
+	LockShare
+	LockUpdate
+)
+
 // SelectBuilder 查询
 type SelectBuilder struct {
 	builder  *Builder
@@ -23,6 +31,7 @@ type SelectBuilder struct {
 	offset      int64
 	offsetvalid bool
 	having      []*whereConstraint
+	lockType    LockType
 	err         error
 	sql         string
 	args        []interface{}
@@ -87,6 +96,18 @@ func (s *SelectBuilder) Having(condition string, values ...interface{}) *SelectB
 		condition: condition,
 		values:    values,
 	})
+	return s
+}
+
+// ForUpdate ForUpdate
+func (s *SelectBuilder) ForUpdate() *SelectBuilder {
+	s.lockType = LockUpdate
+	return s
+}
+
+// LockInShare LockInShare
+func (s *SelectBuilder) LockInShare() *SelectBuilder {
+	s.lockType = LockShare
 	return s
 }
 
@@ -204,6 +225,11 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 	if s.offsetvalid {
 		buf.WriteString(" OFFSET ?")
 		args = append(args, s.offset)
+	}
+	if s.lockType == LockShare {
+		buf.WriteString(" LOCK IN SHARE MODE")
+	} else if s.lockType == LockUpdate {
+		buf.WriteString(" FOR UPDATE")
 	}
 	s.sql = buf.String()
 	s.args = args

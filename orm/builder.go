@@ -11,14 +11,10 @@ type Builder struct {
 	dialect dialect.Dialect
 }
 
-// Commit 提交事务
-func (c *Builder) Commit() error {
-	return c.Executor.Commit()
-}
-
-// Rollback 回滚
-func (c *Builder) Rollback() error {
-	return c.Executor.Rollback()
+func NewBuilder(e medb.Executor) *Builder {
+	return &Builder{
+		Executor: e,
+	}
 }
 
 // SQL 直接写sql
@@ -85,9 +81,4 @@ func (c *Builder) Delete(column string) *DeleteBuilder {
 	builder.builder = c
 	builder.column = column
 	return builder
-}
-
-// NewBuilder 创建无连接构造器
-func NewBuilder() *Builder {
-	return &Builder{}
 }
