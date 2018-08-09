@@ -11,9 +11,15 @@ type Builder struct {
 	dialect dialect.Dialect
 }
 
+// 默认mysql
 func NewBuilder(e medb.Executor) *Builder {
+	return NewDialectBuilder(dialect.Mysql, e)
+}
+
+func NewDialectBuilder(dialect dialect.Dialect, e medb.Executor) *Builder {
 	return &Builder{
 		Executor: e,
+		dialect:  dialect,
 	}
 }
 
