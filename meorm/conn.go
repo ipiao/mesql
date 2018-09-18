@@ -58,27 +58,27 @@ func NewConnection(driverName, dataSource string, name string) *Conn {
 }
 
 // NewBuilder 构建builder
-func (c *Conn) NewBuilder() *Builder {
-	return &Builder{
+func (c *Conn) NewBuilder() *BaseBuilder {
+	return &BaseBuilder{
 		Executor: c.DB,
 		dialect:  c.dialect,
 	}
 }
 
 // BeginBuilder 事务
-func (c *Conn) BeginBuilder() (*Builder, error) {
+func (c *Conn) BeginBuilder() (*BaseBuilder, error) {
 	tx, err := c.DB.Begin()
 	if err != nil {
 		return nil, err
 	}
-	return &Builder{
+	return &BaseBuilder{
 		Executor: tx,
 		dialect:  c.dialect,
 	}, nil
 }
 
 // SQL 直接写sql
-func (c *Conn) SQL(sql string, args ...interface{}) *CommonBuilder {
+func (c *Conn) SQL(sql string, args ...interface{}) *BareBuilder {
 	return c.NewBuilder().SQL(sql, args...)
 }
 

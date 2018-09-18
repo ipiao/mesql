@@ -6,13 +6,13 @@ import (
 
 // DeleteBuilder 删除
 type DeleteBuilder struct {
-	builder    *Builder
+	*where
+	builder    *BaseBuilder
 	sql        string
 	column     string
 	args       []interface{}
 	err        error
 	table      string
-	where      *Where
 	limit      int64
 	limitvalid bool
 	orderbys   []string
@@ -21,7 +21,7 @@ type DeleteBuilder struct {
 func (d *DeleteBuilder) reset() *DeleteBuilder {
 	d.table = ""
 	d.column = ""
-	d.where = new(Where)
+	d.where = new(where)
 	d.orderbys = d.orderbys[:0]
 	d.limit = 0
 	d.limitvalid = false
@@ -32,23 +32,10 @@ func (d *DeleteBuilder) reset() *DeleteBuilder {
 }
 
 // From from
+// delete ... join 语法
+// delete T1 from T1 join T2
 func (d *DeleteBuilder) From(table string) *DeleteBuilder {
 	d.table = table
-	return d
-}
-
-// Where 条件
-func (d *DeleteBuilder) Where(condition string, args ...interface{}) *DeleteBuilder {
-	d.where.where = append(d.where.where, &whereConstraint{
-		condition: condition,
-		values:    args,
-	})
-	return d
-}
-
-// WhereIn in条件
-func (d *DeleteBuilder) WhereIn(col string, args ...interface{}) *DeleteBuilder {
-	d.where.wherein(col, args...)
 	return d
 }
 
@@ -78,20 +65,23 @@ func (d *DeleteBuilder) tosql() (string, []interface{}) {
 
 	var args []interface{}
 	buf.WriteString("DELETE ")
-	buf.WriteString(d.column)
-	buf.WriteString(" FROM ")
+	if len(d.column) > 0 {
+		buf.WriteString(d.column)
+		buf.WriteByte(' ')
+	}
+	buf.WriteString("FROM ")
 	buf.WriteString(d.table)
 
-	if len(d.where.where) > 0 {
+	if len(d.where.conds) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range d.where.where {
+		for i, cond := range d.where.conds {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}

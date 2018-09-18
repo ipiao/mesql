@@ -14,16 +14,12 @@ type SQLBuilder interface {
 }
 
 // Exec 执行
-func (c *Builder) Exec(s SQLBuilder) *medb.Result {
-	if s == nil {
-		return new(medb.Result).SetErr(errors.New("builder can not be nil"))
-	}
-	sql, args := s.ToSQL()
-	return c.Executor.Exec(sql, args...)
+func (c *BaseBuilder) Exec(s SQLBuilder) *medb.Result {
+	return c.ExecContext(context.TODO(), s)
 }
 
 // ExecContext 执行
-func (c *Builder) ExecContext(ctx context.Context, s SQLBuilder) *medb.Result {
+func (c *BaseBuilder) ExecContext(ctx context.Context, s SQLBuilder) *medb.Result {
 	if s == nil {
 		return new(medb.Result).SetErr(errors.New("builder can not be nil"))
 	}
@@ -32,16 +28,12 @@ func (c *Builder) ExecContext(ctx context.Context, s SQLBuilder) *medb.Result {
 }
 
 // Query 查询
-func (c *Builder) Query(s SQLBuilder) *medb.Rows {
-	if s == nil {
-		return &medb.Rows{}
-	}
-	sql, args := s.ToSQL()
-	return c.Executor.Query(sql, args...)
+func (c *BaseBuilder) Query(s SQLBuilder) *medb.Rows {
+	return c.QueryContext(context.TODO(), s)
 }
 
 // QueryContext 查询
-func (c *Builder) QueryContext(ctx context.Context, s SQLBuilder) *medb.Rows {
+func (c *BaseBuilder) QueryContext(ctx context.Context, s SQLBuilder) *medb.Rows {
 	if s == nil {
 		return &medb.Rows{}
 	}
@@ -50,16 +42,12 @@ func (c *Builder) QueryContext(ctx context.Context, s SQLBuilder) *medb.Rows {
 }
 
 // PrepareExec 预处理执行
-func (c *Builder) PrepareExec(s SQLBuilder) *medb.Result {
-	if s == nil {
-		return new(medb.Result).SetErr(errors.New("builder can not be nil"))
-	}
-	sql, args := s.ToSQL()
-	return c.Executor.Prepare(sql).Exec(args...)
+func (c *BaseBuilder) PrepareExec(s SQLBuilder) *medb.Result {
+	return c.PrepareExecContext(context.TODO(), s)
 }
 
 // PrepareContextExec 预处理执行
-func (c *Builder) PrepareContextExec(ctx context.Context, s SQLBuilder) *medb.Result {
+func (c *BaseBuilder) PrepareContextExec(ctx context.Context, s SQLBuilder) *medb.Result {
 	if s == nil {
 		return new(medb.Result).SetErr(errors.New("builder can not be nil"))
 	}
@@ -68,7 +56,7 @@ func (c *Builder) PrepareContextExec(ctx context.Context, s SQLBuilder) *medb.Re
 }
 
 // PrepareExecContext 预处理执行
-func (c *Builder) PrepareExecContext(ctx context.Context, s SQLBuilder) *medb.Result {
+func (c *BaseBuilder) PrepareExecContext(ctx context.Context, s SQLBuilder) *medb.Result {
 	if s == nil {
 		return new(medb.Result).SetErr(errors.New("builder can not be nil"))
 	}
@@ -77,16 +65,12 @@ func (c *Builder) PrepareExecContext(ctx context.Context, s SQLBuilder) *medb.Re
 }
 
 // PrepareQuery 预处理查询
-func (c *Builder) PrepareQuery(s SQLBuilder) *medb.Rows {
-	if s == nil {
-		return &medb.Rows{}
-	}
-	sql, args := s.ToSQL()
-	return c.Executor.Prepare(sql).Query(args...)
+func (c *BaseBuilder) PrepareQuery(s SQLBuilder) *medb.Rows {
+	return c.PrepareQueryContext(context.TODO(), s)
 }
 
 // PrepareContextQuery 预处理查询
-func (c *Builder) PrepareContextQuery(ctx context.Context, s SQLBuilder) *medb.Rows {
+func (c *BaseBuilder) PrepareContextQuery(ctx context.Context, s SQLBuilder) *medb.Rows {
 	if s == nil {
 		return &medb.Rows{}
 	}
@@ -95,7 +79,7 @@ func (c *Builder) PrepareContextQuery(ctx context.Context, s SQLBuilder) *medb.R
 }
 
 // PrepareQueryContext 预处理查询
-func (c *Builder) PrepareQueryContext(ctx context.Context, s SQLBuilder) *medb.Rows {
+func (c *BaseBuilder) PrepareQueryContext(ctx context.Context, s SQLBuilder) *medb.Rows {
 	if s == nil {
 		return &medb.Rows{}
 	}

@@ -4,7 +4,7 @@ import "github.com/ipiao/mesql/medb"
 
 // InsupBuilder insert or update构造器
 type InsupBuilder struct {
-	builder    *Builder
+	builder    *BaseBuilder
 	table      string
 	inscolumns []string
 	upcolumns  []string

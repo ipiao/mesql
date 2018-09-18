@@ -11,12 +11,12 @@ import (
 // UpdateBuilder 更新构造器
 // 只支持单个更新
 type UpdateBuilder struct {
-	builder    *Builder
+	*where
+	builder    *BaseBuilder
 	connname   string
 	table      string
 	columns    []string
 	values     []interface{}
-	where      *Where
 	orderbys   []string
 	limit      int64
 	limitvalid bool
@@ -36,8 +36,7 @@ func (u *UpdateBuilder) reset() *UpdateBuilder {
 	u.table = ""
 	u.columns = u.columns[:0]
 	u.values = u.values[:0]
-	//u.setClause = make([]*setClause, 0, 0)
-	u.where = new(Where)
+	u.where = new(where)
 	u.orderbys = u.orderbys[:0]
 	u.limit = 0
 	u.limitvalid = false
@@ -110,16 +109,10 @@ func (u *UpdateBuilder) Models(models interface{}) *UpdateBuilder {
 
 // Where where 条件
 func (u *UpdateBuilder) Where(condition string, args ...interface{}) *UpdateBuilder {
-	u.where.where = append(u.where.where, &whereConstraint{
+	u.conds = append(u.conds, &condValues{
 		condition: condition,
 		values:    args,
 	})
-	return u
-}
-
-// WhereIn 条件
-func (u *UpdateBuilder) WhereIn(col string, args ...interface{}) *UpdateBuilder {
-	u.where.wherein(col, args...)
 	return u
 }
 
@@ -159,16 +152,16 @@ func (u *UpdateBuilder) tosql() (string, []interface{}) {
 	}
 	args = append(args, u.values...)
 
-	if len(u.where.where) > 0 {
+	if len(u.conds) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range u.where.where {
+		for i, cond := range u.conds {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}

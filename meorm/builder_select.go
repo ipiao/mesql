@@ -18,19 +18,18 @@ const (
 
 // SelectBuilder 查询
 type SelectBuilder struct {
-	builder  *Builder
-	distinct bool
-	columns  []string
-	from     string
-	//where       []*whereConstraint
-	where       *Where
+	*where
+	builder     *BaseBuilder
+	distinct    bool
+	columns     []string
+	from        string
 	orderbys    []string
 	groupbys    []string
 	limit       int64
 	limitvalid  bool
 	offset      int64
 	offsetvalid bool
-	having      []*whereConstraint
+	having      []*condValues
 	lockType    LockType
 	err         error
 	sql         string
@@ -81,18 +80,9 @@ func (s *SelectBuilder) Offset(offset int64) *SelectBuilder {
 	return s
 }
 
-// Where where
-func (s *SelectBuilder) Where(condition string, args ...interface{}) *SelectBuilder {
-	s.where.where = append(s.where.where, &whereConstraint{
-		condition: condition,
-		values:    args,
-	})
-	return s
-}
-
 // Having having
 func (s *SelectBuilder) Having(condition string, values ...interface{}) *SelectBuilder {
-	s.having = append(s.having, &whereConstraint{
+	s.having = append(s.having, &condValues{
 		condition: condition,
 		values:    values,
 	})
@@ -116,14 +106,14 @@ func (s *SelectBuilder) reset() *SelectBuilder {
 	s.distinct = false
 	s.columns = s.columns[:0]
 	s.from = ""
-	s.where = new(Where)
+	s.where = new(where)
 	s.orderbys = s.orderbys[:0]
 	s.groupbys = s.groupbys[:0]
 	s.limit = 0
 	s.limitvalid = false
 	s.offset = 0
 	s.offsetvalid = false
-	s.having = make([]*whereConstraint, 0, 0)
+	s.having = make([]*condValues, 0, 0)
 	s.err = nil
 	s.sql = ""
 	s.args = s.args[:0]
@@ -147,10 +137,10 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 		return "", nil
 	}
 	if len(s.columns) == 0 {
-		panic("没有指定列")
+		s.err = errors.New("没有指定列")
 	}
 	if len(s.from) == 0 {
-		panic("没有指定表")
+		s.err = errors.New("没有指定表")
 	}
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
@@ -170,16 +160,16 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 	buf.WriteString(" FROM ")
 	buf.WriteString(s.from)
 
-	if len(s.where.where) > 0 {
+	if len(s.where.conds) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range s.where.where {
+		for i, cond := range s.where.conds {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}
@@ -200,10 +190,10 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}
@@ -323,16 +313,16 @@ func (s *SelectBuilder) countsql(countCond string) (string, []interface{}) {
 	buf.WriteString(" FROM ")
 	buf.WriteString(s.from)
 
-	if len(s.where.where) > 0 {
+	if len(s.where.conds) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range s.where.where {
+		for i, cond := range s.where.conds {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}
@@ -353,10 +343,10 @@ func (s *SelectBuilder) countsql(countCond string) (string, []interface{}) {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}
@@ -391,16 +381,16 @@ func (s *SelectBuilder) countresult(alies, countCond string) (string, []interfac
 	buf.WriteString(" FROM ")
 	buf.WriteString(s.from)
 
-	if len(s.where.where) > 0 {
+	if len(s.where.conds) > 0 {
 		buf.WriteString(" WHERE ")
-		for i, cond := range s.where.where {
+		for i, cond := range s.where.conds {
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}
@@ -421,16 +411,16 @@ func (s *SelectBuilder) countresult(alies, countCond string) (string, []interfac
 			if i > 0 {
 				buf.WriteString(" AND (")
 			} else {
-				buf.WriteRune('(')
+				buf.WriteByte('(')
 			}
 			buf.WriteString(cond.condition)
-			buf.WriteRune(')')
+			buf.WriteByte(')')
 			if len(cond.values) > 0 {
 				args = append(args, cond.values...)
 			}
 		}
 	}
-	buf.WriteRune(')')
+	buf.WriteByte(')')
 	buf.WriteString(alies)
 	return buf.String(), args
 }
@@ -462,16 +452,16 @@ func (s *SelectBuilder) havingin(col string, args interface{}) *SelectBuilder {
 		}
 		var buf = bufPool.Get()
 		defer bufPool.Put(buf)
-		var where = new(whereConstraint)
+		var where = new(condValues)
 		buf.WriteString(fmt.Sprintf("%s in(", col))
 		for i := 0; i < v.Len(); i++ {
 			if i > 0 {
 				buf.WriteString(" ,?")
 			} else {
-				buf.WriteRune('?')
+				buf.WriteByte('?')
 			}
 		}
-		buf.WriteRune(')')
+		buf.WriteByte(')')
 		where.condition = buf.String()
 		switch v.Index(0).Elem().Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -503,23 +493,5 @@ func (s *SelectBuilder) havingin(col string, args interface{}) *SelectBuilder {
 	} else {
 		s.err = errors.New("参数格式错误，必须为切片或数组")
 	}
-	return s
-}
-
-// WhereLike 全匹配
-func (s *SelectBuilder) WhereLike(col string, arg interface{}) *SelectBuilder {
-	s.where.whereLike(col, arg, 0)
-	return s
-}
-
-// WhereLikeL 左匹配
-func (s *SelectBuilder) WhereLikeL(col string, arg interface{}) *SelectBuilder {
-	s.where.whereLike(col, arg, -1)
-	return s
-}
-
-// WhereLikeR 右匹配
-func (s *SelectBuilder) WhereLikeR(col string, arg interface{}) *SelectBuilder {
-	s.where.whereLike(col, arg, 1)
 	return s
 }

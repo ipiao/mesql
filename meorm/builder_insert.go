@@ -10,7 +10,7 @@ import (
 
 // InsertBuilder insert构造器
 type InsertBuilder struct {
-	builder *Builder
+	builder *BaseBuilder
 	table   string
 	columns []string
 	values  [][]interface{}
@@ -138,7 +138,7 @@ func (b *InsertBuilder) tosql() (string, []interface{}) {
 	var args []interface{}
 	for i, value := range b.values {
 		if i > 0 {
-			buf.WriteRune(',')
+			buf.WriteByte(',')
 		}
 		buf.WriteString(" (")
 		for j, val := range value {
