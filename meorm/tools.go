@@ -16,6 +16,7 @@ func GetTableName(obj interface{}) string {
 }
 
 // getTableName 获取结构体对应的表的名字,v必须为结构体
+// 在分表的情况下，如果是数组，须要是在同一个分表中
 func getTableName(v reflect.Value) string {
 	var tbName string
 	if v.Kind() == reflect.Struct {

@@ -2,7 +2,7 @@ package meorm
 
 import (
 	"github.com/ipiao/mesql/medb"
-	"github.com/ipiao/mesql/orm/dialect"
+	"github.com/ipiao/mesql/meorm/dialect"
 )
 
 // Builder 构造器

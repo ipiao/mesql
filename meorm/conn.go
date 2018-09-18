@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/ipiao/mesql/medb"
-	"github.com/ipiao/mesql/orm/common"
-	"github.com/ipiao/mesql/orm/dialect"
+	"github.com/ipiao/mesql/meorm/common"
+	"github.com/ipiao/mesql/meorm/dialect"
 )
 
 var (
