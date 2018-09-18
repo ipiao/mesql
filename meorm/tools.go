@@ -50,7 +50,7 @@ func getColumns(v reflect.Value) []string {
 				if colName == "" {
 					colName = mutils.SnakeName(f.Name)
 				}
-				if colName == "_" {
+				if colName == medb.MedbFieldIgnore {
 					continue
 				}
 				columns = append(columns, colName)
@@ -76,7 +76,7 @@ func getValues(v reflect.Value) [][]interface{} {
 			} else {
 				var tagMap = medb.ParseTag(f.Tag.Get(ormTag))
 				var colName = tagMap[ormFieldSelectTag]
-				if colName == "_" {
+				if colName == medb.MedbFieldIgnore {
 					continue
 				}
 				values[0] = append(values[0], v.Field(i).Interface())
