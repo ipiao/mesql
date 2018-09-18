@@ -2,6 +2,8 @@ package meorm
 
 import (
 	"fmt"
+
+	"github.com/ipiao/mesql/meorm/dialect"
 )
 
 type condValues struct {
@@ -11,8 +13,9 @@ type condValues struct {
 
 // where where
 type where struct {
-	conds []*condValues
-	err   error
+	conds   []*condValues
+	dialect dialect.Dialect
+	err     error
 }
 
 // Where 条件
@@ -41,8 +44,9 @@ func (w *where) WhereLikeR(col string, arg interface{}) *where {
 
 // like -1表示左边匹配，0全匹配，1.右边匹配
 func (w *where) whereLike(col string, arg interface{}, likekind int8) *where {
+	holder := w.dialect.Holder()
 	var condValues = &condValues{
-		condition: fmt.Sprintf("%s LIKE ?", col),
+		condition: fmt.Sprintf("%s LIKE %c", col, holder),
 	}
 	var value interface{}
 	if likekind == 0 {
@@ -68,16 +72,16 @@ func (w *where) wherein(col string, args ...interface{}) *where {
 	// 	w.err = fmt.Errorf("length of args in method wherein %s can not be 0", col)
 	// 	return w
 	// }
+	holder := w.dialect.Holder()
 	var buf = bufPool.Get()
 	defer bufPool.Put(buf)
 	var condValues = new(condValues)
 	buf.WriteString(fmt.Sprintf("%s IN(", col))
 	for i := 0; i < len(args); i++ {
 		if i > 0 {
-			buf.WriteString(" ,?")
-		} else {
-			buf.WriteByte('?')
+			buf.WriteString(" ,")
 		}
+		buf.WriteByte(holder)
 	}
 	buf.WriteByte(')')
 	condValues.condition = buf.String()
@@ -130,16 +134,16 @@ func (w *where) wherenotin(col string, args ...interface{}) *where {
 		return w
 	}
 
+	holder := w.dialect.Holder()
 	var buf = bufPool.Get()
 	defer bufPool.Put(buf)
 	var condValues = new(condValues)
 	buf.WriteString(fmt.Sprintf("%s NOT IN(", col))
 	for i := 0; i < len(args); i++ {
 		if i > 0 {
-			buf.WriteString(" ,?")
-		} else {
-			buf.WriteByte('?')
+			buf.WriteString(" ,")
 		}
+		buf.WriteByte(holder)
 	}
 	buf.WriteByte(')')
 	condValues.condition = buf.String()

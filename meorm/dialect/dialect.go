@@ -10,12 +10,19 @@ type Holder string
 const (
 	UnKnown Dialect = iota
 	Mysql
+	PGSql
 )
 
-// holders
-const (
-	mysqlHolder = "?"
-)
+func (d Dialect) Holder() byte {
+	switch d {
+	case Mysql:
+		return '?'
+	case PGSql:
+		return '$'
+	default:
+		return '?'
+	}
+}
 
 func ConvertDriverNameToDialect(s string) Dialect {
 	var d Dialect

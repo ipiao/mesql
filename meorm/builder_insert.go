@@ -111,8 +111,8 @@ func (b *InsertBuilder) tosql() (string, []interface{}) {
 		b.err = errors.New("replace and ignore can not simultaneous exists")
 		return "", nil
 	}
-	// mutex.Lock()
-	// defer mutex.Unlock()
+
+	holder := b.builder.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -143,10 +143,9 @@ func (b *InsertBuilder) tosql() (string, []interface{}) {
 		buf.WriteString(" (")
 		for j, val := range value {
 			if j > 0 {
-				buf.WriteString(" ,?")
-			} else {
-				buf.WriteString("?")
+				buf.WriteString(" ,")
 			}
+			buf.WriteByte(holder)
 			args = append(args, val)
 		}
 		buf.WriteString(")")

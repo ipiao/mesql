@@ -3,7 +3,6 @@ package meorm
 import (
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/ipiao/mesql/medb"
 )
@@ -107,6 +106,7 @@ func (s *SelectBuilder) reset() *SelectBuilder {
 	s.columns = s.columns[:0]
 	s.from = ""
 	s.where = new(where)
+	s.where.dialect = s.dialect
 	s.orderbys = s.orderbys[:0]
 	s.groupbys = s.groupbys[:0]
 	s.limit = 0
@@ -130,8 +130,6 @@ func (s *SelectBuilder) ToSQL() (string, []interface{}) {
 
 // 把查询条件组成sql并放到查询体中
 func (s *SelectBuilder) tosql() (string, []interface{}) {
-	// mutex.Lock()
-	// defer mutex.Unlock()
 	if s.where.err != nil {
 		s.err = s.where.err
 		return "", nil
@@ -142,6 +140,8 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 	if len(s.from) == 0 {
 		s.err = errors.New("没有指定表")
 	}
+
+	holder := s.builder.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -209,11 +209,13 @@ func (s *SelectBuilder) tosql() (string, []interface{}) {
 		}
 	}
 	if s.limitvalid {
-		buf.WriteString(" LIMIT ?")
+		buf.WriteString(" LIMIT ")
+		buf.WriteByte(holder)
 		args = append(args, s.limit)
 	}
 	if s.offsetvalid {
-		buf.WriteString(" OFFSET ?")
+		buf.WriteString(" OFFSET ")
+		buf.WriteByte(holder)
 		args = append(args, s.offset)
 	}
 	if s.lockType == LockShare {
@@ -439,59 +441,21 @@ func (s *SelectBuilder) WhereNotIn(col string, args ...interface{}) *SelectBuild
 
 // havingIn In
 func (s *SelectBuilder) havingIn(col string, args ...interface{}) *SelectBuilder {
-	return s.havingin(col, args)
-}
+	holder := s.builder.dialect.Holder()
+	var buf = bufPool.Get()
+	defer bufPool.Put(buf)
 
-// havingin 查询条件in的解析
-func (s *SelectBuilder) havingin(col string, args interface{}) *SelectBuilder {
-	var v = reflect.Indirect(reflect.ValueOf(args))
-	var k = v.Kind()
-	if k == reflect.Slice || k == reflect.Array {
-		if v.Len() == 0 {
-			return s
+	var condValues = new(condValues)
+	buf.WriteString(fmt.Sprintf("%s in(", col))
+	for i := 0; i < len(args); i++ {
+		if i > 0 {
+			buf.WriteString(" ,")
 		}
-		var buf = bufPool.Get()
-		defer bufPool.Put(buf)
-		var where = new(condValues)
-		buf.WriteString(fmt.Sprintf("%s in(", col))
-		for i := 0; i < v.Len(); i++ {
-			if i > 0 {
-				buf.WriteString(" ,?")
-			} else {
-				buf.WriteByte('?')
-			}
-		}
-		buf.WriteByte(')')
-		where.condition = buf.String()
-		switch v.Index(0).Elem().Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().Int())
-			}
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().Uint())
-			}
-
-		case reflect.Float32, reflect.Float64:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().Float())
-			}
-		case reflect.Bool:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Bool())
-			}
-		case reflect.String:
-			for i := 0; i < v.Len(); i++ {
-				where.values = append(where.values, v.Index(i).Elem().String())
-			}
-		default:
-			s.err = fmt.Errorf("in不支持的类型%s", v.Index(0).Elem().Kind().String())
-		}
-
-		s.having = append(s.having, where)
-	} else {
-		s.err = errors.New("参数格式错误，必须为切片或数组")
+		buf.WriteByte(holder)
 	}
+	buf.WriteByte(')')
+	condValues.condition = buf.String()
+
+	s.having = append(s.having, condValues)
 	return s
 }

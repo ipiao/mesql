@@ -59,6 +59,7 @@ func (b *InsupBuilder) DupKeys(cols ...string) *InsupBuilder {
 
 // tosql
 func (b *InsupBuilder) tosql() (string, []interface{}) {
+	holder := b.builder.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -77,10 +78,9 @@ func (b *InsupBuilder) tosql() (string, []interface{}) {
 	buf.WriteString(" (")
 	for i, value := range b.insvalues {
 		if i > 0 {
-			buf.WriteString(" ,?")
-		} else {
-			buf.WriteString("?")
+			buf.WriteString(" ,")
 		}
+		buf.WriteByte(holder)
 		args = append(args, value)
 	}
 	buf.WriteString(")")
@@ -107,7 +107,8 @@ func (b *InsupBuilder) tosql() (string, []interface{}) {
 		if i > 0 {
 			buf.WriteString(" ,")
 		}
-		buf.WriteString(b.upcolumns[i] + "=?")
+		buf.WriteString(b.upcolumns[i] + "=")
+		buf.WriteByte(holder)
 		args = append(args, b.upvalues[i])
 	}
 

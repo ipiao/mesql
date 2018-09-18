@@ -12,5 +12,6 @@ func TestDelete(t *testing.T) {
 func TestSelect(t *testing.T) {
 	b := Select("id,name").From("table")
 	b.WhereIn("id", 1, 2, 3)
+	b.WhereLike("name", "a")
 	t.Log(b.ToSQL())
 }

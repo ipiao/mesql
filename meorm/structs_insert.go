@@ -31,6 +31,8 @@ func (c *BaseBuilder) InsertModels(models interface{}) *medb.Result {
 // 插入结构体
 // mysql 的主键遇 0 值可以自动忽略
 func (c *BaseBuilder) insertStruct(v *reflect.Value) *medb.Result {
+
+	holder := c.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -55,7 +57,7 @@ func (c *BaseBuilder) insertStruct(v *reflect.Value) *medb.Result {
 			valueStr += " ,"
 		}
 		buf.WriteString(col)
-		valueStr += "?"
+		valueStr += string(holder)
 	}
 	buf.WriteString(") VALUES ")
 	valueStr += ")"
@@ -66,6 +68,8 @@ func (c *BaseBuilder) insertStruct(v *reflect.Value) *medb.Result {
 
 // 插入数组
 func (c *BaseBuilder) insertSlice(v *reflect.Value) *medb.Result {
+
+	holder := c.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -90,7 +94,7 @@ func (c *BaseBuilder) insertSlice(v *reflect.Value) *medb.Result {
 			valueStr += " ,"
 		}
 		buf.WriteString(col)
-		valueStr += "?"
+		valueStr += string(holder)
 	}
 	buf.WriteString(") VALUES ")
 	valueStr += "),"

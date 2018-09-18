@@ -22,6 +22,7 @@ func (d *DeleteBuilder) reset() *DeleteBuilder {
 	d.table = ""
 	d.column = ""
 	d.where = new(where)
+	d.where.dialect = d.dialect
 	d.orderbys = d.orderbys[:0]
 	d.limit = 0
 	d.limitvalid = false
@@ -54,12 +55,13 @@ func (d *DeleteBuilder) Limit(limit int64) *DeleteBuilder {
 
 // 生成sql
 func (d *DeleteBuilder) tosql() (string, []interface{}) {
-	// mutex.Lock()
-	// defer mutex.Unlock()
+
 	if d.where.err != nil {
 		d.err = d.where.err
 		return "", nil
 	}
+
+	holder := d.builder.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -98,7 +100,8 @@ func (d *DeleteBuilder) tosql() (string, []interface{}) {
 		}
 	}
 	if d.limitvalid {
-		buf.WriteString(" LIMIT ?")
+		buf.WriteString(" LIMIT ")
+		buf.WriteByte(holder)
 		args = append(args, d.limit)
 	}
 

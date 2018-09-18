@@ -37,6 +37,7 @@ func (u *UpdateBuilder) reset() *UpdateBuilder {
 	u.columns = u.columns[:0]
 	u.values = u.values[:0]
 	u.where = new(where)
+	u.where.dialect = u.dialect
 	u.orderbys = u.orderbys[:0]
 	u.limit = 0
 	u.limitvalid = false
@@ -131,12 +132,12 @@ func (u *UpdateBuilder) Limit(limit int64) *UpdateBuilder {
 
 // 生成sql
 func (u *UpdateBuilder) tosql() (string, []interface{}) {
-	// mutex.Lock()
-	// defer mutex.Unlock()
 	if u.where.err != nil {
 		u.err = u.where.err
 		return "", nil
 	}
+
+	holder := u.builder.dialect.Holder()
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 
@@ -148,7 +149,8 @@ func (u *UpdateBuilder) tosql() (string, []interface{}) {
 		if i > 0 {
 			buf.WriteString(", ")
 		}
-		buf.WriteString(s + "=?")
+		buf.WriteString(s + "=")
+		buf.WriteByte(holder)
 	}
 	args = append(args, u.values...)
 
@@ -178,7 +180,8 @@ func (u *UpdateBuilder) tosql() (string, []interface{}) {
 		}
 	}
 	if u.limitvalid {
-		buf.WriteString(" LIMIT ?")
+		buf.WriteString(" LIMIT ")
+		buf.WriteByte(holder)
 		args = append(args, u.limit)
 	}
 
