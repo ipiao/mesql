@@ -21,7 +21,7 @@ var (
 var (
 	MedbTag           = "db"        // medb 标签字段
 	MedbFieldName     = "col"       // 标签解析映射后，col对应字段名
-	MedbFieldIgnore   = "_"         // "_" not "-"
+	MedbFieldIgnore   = "-"         // 忽略标签"-"
 	MedbFieldCp       = "cp"        // custome parse 字段自定义解析标签
 	MedbFieldCpMethod = "MedbParse" // custome parse 字段自定义解析方法名
 	Logger            = melogger.New("medb")
